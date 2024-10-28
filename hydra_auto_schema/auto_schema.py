@@ -14,210 +14,55 @@ from __future__ import annotations
 import copy
 import dataclasses
 import datetime
-import importlib
 import inspect
 import json
 import os.path
 import subprocess
 import typing
 import warnings
-from collections.abc import Callable, Mapping, MutableMapping, Sequence
+from collections.abc import Callable, MutableMapping
 from logging import getLogger as get_logger
 from pathlib import Path
-from typing import Any, ClassVar, Literal, TypedDict, TypeVar
+from typing import Any, TypeVar
 
 import docstring_parser as dp
 
-# import flax
-# import flax.linen
-# import flax.struct
 import hydra.errors
 import hydra.plugins
 import hydra.utils
 import hydra_zen
 
-# import lightning.pytorch.callbacks
 import omegaconf
 import pydantic
 import pydantic.schema
 import tqdm
 from hydra._internal.config_loader_impl import ConfigLoaderImpl
 from hydra._internal.utils import create_config_search_path
-from hydra.core.config_search_path import ConfigSearchPath
-from hydra.plugins.search_path_plugin import SearchPathPlugin
 from hydra.types import RunMode
 from omegaconf import DictConfig, OmegaConf
 from pydantic.json_schema import GenerateJsonSchema, JsonSchemaValue
 from pydantic_core import core_schema
 from tqdm.rich import tqdm_rich
-from typing_extensions import NotRequired, Required
+
+from hydra_auto_schema.customize import custom_enum_schemas, special_handlers
+from hydra_auto_schema.hydra_schema import (
+    HYDRA_CONFIG_SCHEMA,
+    ObjectSchema,
+    PropertySchema,
+    Schema,
+)
 
 
 logger = get_logger(__name__)
 
-_SpecialEntries = TypedDict(
-    "_SpecialEntries", {"$defs": dict[str, dict], "$schema": str}, total=False
-)
 
-
-def register_auto_schema_plugin():
-    import hydra.core.plugins
-
-    hydra.core.plugins.Plugins.instance().register(AutoSchemaPlugin)
-
-
-class PropertySchema(_SpecialEntries, total=False):
-    title: str
-    type: str
-    description: str
-    default: Any
-    examples: list[str]
-    deprecated: bool
-    readOnly: bool
-    writeOnly: bool
-    const: Any
-    enum: list[Any]
-
-
-# S = TypeVar("S", bound=PropertySchema, covariant=True)
-
-
-class OneOf(TypedDict):
-    oneOf: Sequence[
-        PropertySchema | ArrayPropertySchema | ObjectSchema | StringPropertySchema
-    ]
-
-
-class ArrayPropertySchema(PropertySchema, total=False):
-    type: Literal["array"]
-    items: Required[PropertySchema | OneOf]
-    minItems: int
-    maxItems: int
-    uniqueItems: bool
-
-
-class StringPropertySchema(PropertySchema, total=False):
-    type: Literal["string"]
-    pattern: str
-
-
-class _PropertyNames(TypedDict):
-    pattern: str
-
-
-class ObjectSchema(PropertySchema, total=False):
-    type: Literal["object"]
-    # annoying that we have to include the subclasses here!
-    properties: MutableMapping[
-        str, PropertySchema | ArrayPropertySchema | StringPropertySchema | ObjectSchema
-    ]
-    patternProperties: Mapping[str, PropertySchema | StringPropertySchema]
-    propertyNames: _PropertyNames
-    minProperties: int
-    maxProperties: int
-
-
-class Schema(TypedDict, total=False):
-    # "$defs":
-    title: str
-    description: str
-    type: str
-
-    # annoying that we have to include the subclasses here!
-    properties: Required[
-        MutableMapping[
-            str,
-            PropertySchema | ArrayPropertySchema | StringPropertySchema | ObjectSchema,
-        ]
-    ]
-    required: NotRequired[list[str]]
-
-    additionalProperties: NotRequired[bool]
-
-    dependentRequired: NotRequired[MutableMapping[str, list[str]]]
-    """ https://json-schema.org/understanding-json-schema/reference/conditionals#dependentRequired """
-
-
-HYDRA_CONFIG_SCHEMA = Schema(
-    title="Default Schema for any Hydra config file.",
-    description="Schema created by the `auto_schema.py` script.",
-    properties={
-        "defaults": ArrayPropertySchema(
-            title="Hydra defaults",
-            description="Hydra defaults for this config. See https://hydra.cc/docs/advanced/defaults_list/",
-            type="array",
-            items=OneOf(
-                oneOf=[
-                    ObjectSchema(
-                        type="object",
-                        propertyNames={"pattern": r"^(override\s*)?(/?\w*)+$"},
-                        patternProperties={
-                            # todo: support package directives with @?
-                            # todo: Create a enum schema using the available options in the config group!
-                            # override network: something  -> `something` value should be in the available options for network.
-                            r"^(override\s*)?(/?\w*)*$": StringPropertySchema(
-                                type="string", pattern=r"\w*(.yaml|.yml)?$"
-                            ),
-                        },
-                        minProperties=1,
-                        maxProperties=1,
-                    ),
-                    StringPropertySchema(type="string", pattern=r"^\w+(.yaml|.yml)?$"),
-                    ObjectSchema(
-                        type="object",
-                        propertyNames=_PropertyNames(
-                            pattern=r"^(override\s*)?(/?\w*)+$"
-                        ),
-                        patternProperties={
-                            r"^(override\s*)?(/?\w*)*$": PropertySchema(type="null"),
-                        },
-                        minProperties=1,
-                        maxProperties=1,
-                    ),
-                ],
-            ),
-            uniqueItems=True,
-        ),
-        "_target_": StringPropertySchema(
-            type="string",
-            title="Target",
-            description="Target to instantiate.\nSee https://hydra.cc/docs/advanced/instantiate_objects/overview/",
-        ),
-        "_convert_": StringPropertySchema(
-            type="string",
-            enum=["none", "partial", "object", "all"],
-            title="Convert",
-            description="See https://hydra.cc/docs/advanced/instantiate_objects/overview/#parameter-conversion-strategies",
-        ),
-        "_partial_": PropertySchema(
-            type="boolean",
-            title="Partial",
-            description=(
-                "Whether this config calls the target function when instantiated, or creates "
-                "a `functools.partial` that will call the target.\n"
-                "See: https://hydra.cc/docs/advanced/instantiate_objects/overview"
-            ),
-        ),
-        "_recursive_": PropertySchema(
-            type="boolean",
-            title="Recursive",
-            description=(
-                "Whether instantiating this config should recursively instantiate children configs.\n"
-                "See: https://hydra.cc/docs/advanced/instantiate_objects/overview/#recursive-instantiation"
-            ),
-        ),
-    },
-    dependentRequired={
-        "_convert_": ["_target_"],
-        "_partial_": ["_target_"],
-        "_args_": ["_target_"],
-        "_recursive_": ["_target_"],
-    },
-)
-
-
-def _yaml_files_in(configs_dir):
-    return list(configs_dir.rglob("*.yaml")) + list(configs_dir.rglob("*.yml"))
+# TODO: Ignore .venv subfiles if the `configs_dir` isn't itself in a ".venv" directory.
+def _yaml_files_in(configs_dir: Path) -> list[Path]:
+    if ".venv" in configs_dir.parts:
+        return list(configs_dir.rglob("*.yaml")) + list(configs_dir.rglob("*.yml"))
+    return list(
+        p for p in configs_dir.rglob("*.yaml") if ".venv" not in p.parts
+    ) + list(p for p in configs_dir.rglob("*.yml") if ".venv" not in p.parts)
 
 
 def add_schemas_to_all_hydra_configs(
@@ -309,7 +154,7 @@ def add_schemas_to_all_hydra_configs(
                 config = _load_config(
                     config_file, configs_dir=configs_dir, repo_root=repo_root
                 )
-            schema = create_schema_for_config(
+            schema = _create_schema_for_config(
                 config,
                 config_file=config_file,
                 configs_dir=configs_dir,
@@ -376,7 +221,7 @@ def add_schemas_to_all_hydra_configs(
 
     logger.debug("Adding headers to config files to point to the schemas to use.")
     for config_file, schema_file in config_file_to_schema_file.items():
-        add_schema_header(config_file, schema_path=schema_file)
+        _add_schema_header(config_file, schema_path=schema_file)
 
 
 def _add_schemas_dir_to_gitignore(schemas_dir: Path, repo_root: Path):
@@ -513,7 +358,7 @@ def _all_subentries_with_target(config: dict) -> dict[tuple[str, ...], dict]:
     return entries
 
 
-def create_schema_for_config(
+def _create_schema_for_config(
     config: dict | DictConfig,
     config_file: Path,
     configs_dir: Path | None,
@@ -570,7 +415,7 @@ def create_schema_for_config(
 
         if is_top_level:
             schema = _merge_dicts(
-                schema, nested_value_schema, conflict_handler=overwrite
+                schema, nested_value_schema, conflict_handler=_overwrite
             )
             continue
 
@@ -594,7 +439,7 @@ def create_schema_for_config(
             where_to_set["properties"] = _merge_dicts(  # type: ignore
                 where_to_set["properties"],
                 {last_key: nested_value_schema},  # type: ignore
-                conflict_handler=overwrite,
+                conflict_handler=_overwrite,
             )
 
     return schema
@@ -637,7 +482,7 @@ def _update_schema_from_defaults(
         # except omegaconf.errors.MissingMandatoryValue:
         #     default_config = OmegaConf.load(other_config_path)
 
-        schema_of_default = create_schema_for_config(
+        schema_of_default = _create_schema_for_config(
             config=default_config,
             config_file=other_config_path,
             configs_dir=configs_dir,
@@ -653,10 +498,10 @@ def _update_schema_from_defaults(
             schema_of_default,  # type: ignore
             schema,  # type: ignore
             conflict_handlers={
-                "_target_": overwrite,  # use the new target.
-                "default": overwrite,  # use the new default?
-                "title": overwrite,
-                "description": overwrite,
+                "_target_": _overwrite,  # use the new target.
+                "default": _overwrite,  # use the new default?
+                "title": _overwrite,
+                "description": _overwrite,
             },
         )
         # todo: deal with this one here.
@@ -665,11 +510,11 @@ def _update_schema_from_defaults(
     return schema
 
 
-def overwrite(val_a: Any, val_b: Any) -> Any:
+def _overwrite(val_a: Any, val_b: Any) -> Any:
     return val_b
 
 
-def keep_previous(val_a: Any, val_b: Any) -> Any:
+def _keep_previous(val_a: Any, val_b: Any) -> Any:
     return val_a
 
 
@@ -793,7 +638,7 @@ def _load_config(config_path: Path, configs_dir: Path, repo_root: Path) -> DictC
     return config
 
 
-def add_schema_header(config_file: Path, schema_path: Path) -> None:
+def _add_schema_header(config_file: Path, schema_path: Path) -> None:
     """Add a comment in the yaml config file to tell yaml language server where to look for the
     schema.
 
@@ -847,28 +692,9 @@ def add_schema_header(config_file: Path, schema_path: Path) -> None:
         config_file.write_text(result)
 
 
-_special_handlers: dict[str, dict] = {
-    # flax.linen.Module: {"zen_exclude": ["parent"]},
-    # lightning.pytorch.callbacks.RichProgressBar: {"zen_exclude": ["theme"]},
-}
-try:
-    from flax.linen import Module  # type: ignore
-
-    _special_handlers[Module] = {"zen_exclude": ["parent"]}
-except ImportError:
-    pass
-
-try:
-    from lightning.pytorch.callbacks import RichProgressBar  # type: ignore
-
-    _special_handlers[RichProgressBar] = {"zen_exclude": ["theme"]}
-except ImportError:
-    pass
-
-
 def _get_dataclass_from_target(target: Any, config: dict | DictConfig) -> type:
-    if inspect.isclass(target) and target in _special_handlers:
-        special_kwargs = _special_handlers[target]
+    if inspect.isclass(target) and target in special_handlers:
+        special_kwargs = special_handlers[target]
         kwargs = _merge_dicts(
             dict(
                 populate_full_signature=True,
@@ -1006,88 +832,6 @@ class _MyGenerateJsonSchema(GenerateJsonSchema):
         """
         enum_type = schema["cls"]
         logger.debug(f"Enum of type {enum_type}")
-        import torchvision.models.resnet
-
-        if issubclass(enum_type, torchvision.models.WeightsEnum):
-
-            @dataclasses.dataclass
-            class Dummy:
-                value: str
-
-            slightly_changed_schema = schema | {
-                "members": [Dummy(v.name) for v in schema["members"]]
-            }
-            return super().enum_schema(slightly_changed_schema)  # type: ignore
+        if custom_handler := custom_enum_schemas.get(enum_type):
+            schema = custom_handler(enum_type, schema)
         return super().enum_schema(schema)
-
-
-@hydra_zen.hydrated_dataclass(
-    add_schemas_to_all_hydra_configs, populate_full_signature=True, zen_partial=True
-)
-class AutoSchemaPluginConfig:
-    """Config for the AutoSchemaPlugin."""
-
-    schemas_dir: Path | None = None
-    regen_schemas: bool = False
-    stop_on_error: bool = False
-    quiet: bool = True
-    add_headers: bool | None = False
-
-
-config: AutoSchemaPluginConfig | None = None
-
-
-class AutoSchemaPlugin(SearchPathPlugin):
-    provider: str
-    path: str
-    _ALREADY_DID: ClassVar[bool] = False
-
-    def __init__(self) -> None:
-        super().__init__()
-        self.config = config or AutoSchemaPluginConfig()
-        self.fn = hydra_zen.instantiate(self.config)
-
-    def manipulate_search_path(self, search_path: ConfigSearchPath) -> None:
-        if type(self)._ALREADY_DID:
-            # TODO: figure out what's causing this.
-            logger.debug(
-                f"Avoiding weird recursion in the {AutoSchemaPlugin.__name__}."
-            )
-            return
-        type(self)._ALREADY_DID = True
-
-        search_path_entries = search_path.get_path()
-
-        # WIP: Trying to infer the project root, configs dir from the Hydra context.
-        # Currently hard-coded.
-
-        for search_path_entry in search_path_entries:
-            # TODO: There are probably lots of assumptions that are specific to the
-            # ResearchTemplate repo that would need to be removed / generalized before we can make
-            # this a pip-installable hydra plugin..
-            if search_path_entry.provider != "main":
-                continue
-
-            if search_path_entry.path.startswith("pkg://"):
-                configs_pkg = search_path_entry.path.removeprefix("pkg://")
-                project_package = configs_pkg.split(".")[0]
-                _project_module = importlib.import_module(project_package)
-                assert (
-                    _project_module.__file__
-                    and Path(_project_module.__file__).name == "__init__.py"
-                )
-                repo_root = Path(_project_module.__file__).parent.parent
-                configs_dir = repo_root / configs_pkg.replace(".", "/")
-                if not (repo_root.is_dir() and configs_dir.is_dir()):
-                    logger.warning(
-                        f"Unable to add schemas to Hydra configs: "
-                        f"Expected to find the project root directory at {repo_root} "
-                        f"and the configs directory at {configs_dir}!"
-                    )
-                    continue
-                # print(f"{self.fn=}, {_project_module}, {repo_root=}, {configs_dir=}")
-                self.fn(
-                    config_files=None,
-                    repo_root=repo_root,
-                    configs_dir=configs_dir,
-                )

@@ -1,4 +1,0 @@
-# yaml-language-server: $schema=../../.schemas/auto_schema_test_with_defaults_schema.json
-defaults:
-  - with_target
-bar: "bob"

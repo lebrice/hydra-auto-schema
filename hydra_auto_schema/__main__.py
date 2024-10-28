@@ -7,6 +7,7 @@ import sys
 import time
 from pathlib import Path
 import rich.logging
+from watchdog.observers import Observer
 
 
 def main(argv: list[str] | None = None):
@@ -28,8 +29,9 @@ def main(argv: list[str] | None = None):
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--configs_dir",
+        "configs_dir",
         type=Path,
+        nargs="?",
         default=None,
         help=(
             "The directory containing hydra config files for which schemas should be generated. "
@@ -72,13 +74,14 @@ def main(argv: list[str] | None = None):
     watch: bool = args.watch
 
     if configs_dir is None:
-        configs_dir = next(repo_root.rglob("configs"), None)
-        assert False, configs_dir
+        configs_dir = next(
+            (p for p in repo_root.rglob("configs") if ".venv" not in p.parts), None
+        )
 
     if configs_dir is None:
         raise ValueError(
             f"--configs-dir was not passed, and no hydra configs directory was found in "
-            f"the {repo_root=}!"
+            f"the passed repo root: {repo_root}!"
         )
     if not configs_dir.is_absolute():
         configs_dir = repo_root / configs_dir

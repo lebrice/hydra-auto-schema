@@ -4,9 +4,9 @@ from hydra_auto_schema.auto_schema import (
     _install_yaml_vscode_extension,
     _load_config,
     _read_json,
-    add_schema_header,
+    _add_schema_header,
     add_schemas_to_all_hydra_configs,
-    create_schema_for_config,
+    _create_schema_for_config,
     logger,
 )
 
@@ -147,7 +147,7 @@ class AutoSchemaEventHandler(PatternMatchingEventHandler):
             config = _load_config(
                 config_file, configs_dir=self.configs_dir, repo_root=self.repo_root
             )
-        schema = create_schema_for_config(
+        schema = _create_schema_for_config(
             config,
             config_file=config_file,
             configs_dir=self.configs_dir,
@@ -182,7 +182,7 @@ class AutoSchemaEventHandler(PatternMatchingEventHandler):
         logger.debug(
             "Adding a header to the config file to point to the schema to use."
         )
-        add_schema_header(config_file, schema_path=schema_file)
+        _add_schema_header(config_file, schema_path=schema_file)
 
     def _remove_schema_file(self, config_file: Path) -> None:
         schema_file = _get_schema_file_path(config_file, self.schemas_dir)

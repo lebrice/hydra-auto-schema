@@ -1,2 +1,15 @@
-def hello() -> str:
-    return "Hello from hydra-auto-schema!"
+from .customize import custom_enum_schemas, special_handlers
+from .auto_schema import (
+    add_schemas_to_all_hydra_configs,
+)
+from .auto_schema_plugin import AutoSchemaPlugin, register_auto_schema_plugin
+from .filewatcher import AutoSchemaEventHandler
+
+__all__ = [
+    "add_schemas_to_all_hydra_configs",
+    "AutoSchemaPlugin",
+    "register_auto_schema_plugin",
+    "AutoSchemaEventHandler",
+    "special_handlers",
+    "custom_enum_schemas",
+]

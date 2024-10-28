@@ -1,3 +1,0 @@
-# yaml-language-server: $schema=../../.schemas/auto_schema_test_partial_schema.json
-_target_: hydra_auto_schema.auto_schema_test.Foo
-_partial_: true

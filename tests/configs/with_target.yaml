@@ -1,0 +1,3 @@
+# yaml-language-server: $schema=with_target.json
+_target_: hydra_auto_schema.auto_schema_test.Foo
+bar: "bob"
