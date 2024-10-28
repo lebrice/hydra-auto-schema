@@ -26,12 +26,10 @@ from pathlib import Path
 from typing import Any, TypeVar
 
 import docstring_parser as dp
-
 import hydra.errors
 import hydra.plugins
 import hydra.utils
 import hydra_zen
-
 import omegaconf
 import pydantic
 import pydantic.schema
@@ -51,7 +49,6 @@ from hydra_auto_schema.hydra_schema import (
     PropertySchema,
     Schema,
 )
-
 
 logger = get_logger(__name__)
 
@@ -77,7 +74,6 @@ def add_schemas_to_all_hydra_configs(
     """Adds schemas to all the passed Hydra config files.
 
     Parameters:
-        config_files: List of paths to the Hydra config files. If None, all YAML files in configs_dir are used.
         repo_root: The root directory of the repository.
         configs_dir: The directory containing the Hydra config files.
         schemas_dir: The directory to store the generated schema files. Defaults to ".schemas" in the repo_root.
