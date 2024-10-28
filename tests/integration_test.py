@@ -7,10 +7,9 @@ config_dir = Path(__file__).parent / "configs"
 
 def test_run_via_cli_without_errors():
     """Checks that the command completes without errors."""
-    # Run programmatically instead of with a subproc4ess so we can get nice coverage stats.
-    main(
-        [f"{config_dir}", "--stop-on-error"]
-    )  # assuming we're at the project root directory.
+    # Run programmatically instead of with a subprocess so we can get nice coverage stats.
+    # assuming we're at the project root directory.
+    main([f"{config_dir}", "--stop-on-error"])
 
 
 def test_run_with_uvx():
