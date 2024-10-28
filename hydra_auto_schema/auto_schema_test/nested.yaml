@@ -1,0 +1,7 @@
+# yaml-language-server: $schema=../../.schemas/auto_schema_test_nested_schema.json
+a:
+  b:
+    foo:
+      _target_: hydra_auto_schema.auto_schema_test.Bar
+      bar: "boo"
+      baz: 123
