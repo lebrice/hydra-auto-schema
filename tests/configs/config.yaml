@@ -1,0 +1,3 @@
+# yaml-language-server: $schema=config.json
+defaults:
+  - _self_

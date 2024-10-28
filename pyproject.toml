@@ -25,3 +25,7 @@ build-backend = "hatchling.build"
 [tool.uv]
 dev-dependencies = ["pytest>=8.3.3", "pytest-regressions>=2.5.0"]
 managed = true
+
+
+[tool.hatch.build.targets.wheel]
+packages = ["hydra_auto_schema", "hydra_plugins"]

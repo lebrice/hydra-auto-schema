@@ -162,3 +162,4 @@ cython_debug/
 #.idea/
 .schemas
 tests/configs/*.json
+outputs
