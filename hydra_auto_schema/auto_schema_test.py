@@ -4,9 +4,8 @@ from pathlib import Path
 import pytest
 import yaml
 from pytest_regressions.file_regression import FileRegressionFixture
-
-
 from .auto_schema import _add_schema_header, _create_schema_for_config
+
 
 REPO_ROOTDIR = Path.cwd()
 

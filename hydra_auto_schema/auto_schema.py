@@ -56,8 +56,8 @@ from hydra_auto_schema.hydra_schema import (
 logger = get_logger(__name__)
 
 
-# TODO: Ignore .venv subfiles if the `configs_dir` isn't itself in a ".venv" directory.
 def _yaml_files_in(configs_dir: Path) -> list[Path]:
+    # Ignores .venv subfiles if the `configs_dir` isn't itself in a ".venv" directory.
     if ".venv" in configs_dir.parts:
         return list(configs_dir.rglob("*.yaml")) + list(configs_dir.rglob("*.yml"))
     return list(
