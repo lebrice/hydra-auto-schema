@@ -73,7 +73,7 @@ class AutoSchemaEventHandler(PatternMatchingEventHandler):
         )
         self.console = rich.console.Console()
         self.console.log(
-            f"Watching for changes in config files in the {configs_dir} directory."
+            f"Watching for changes in config files in the {_pretty_path(configs_dir)} directory."
         )
 
     def on_created(self, event: DirCreatedEvent | FileCreatedEvent) -> None:
@@ -143,16 +143,17 @@ class AutoSchemaEventHandler(PatternMatchingEventHandler):
         return False
 
     def run(self, config_file: Path) -> None:
+        pretty_path = _pretty_path(config_file)
         try:
             self._run(config_file)
         except Exception as exc:
             logger.warning(f"Error while processing config at {config_file}: {exc}")
             # TODO: Only add the "(use -v for more info)" if "-v" is not already set.
             self.console.log(
-                f"Unable to generate the schema for {config_file}. (use -v for more info)."
+                f"Unable to generate the schema for {pretty_path}. (use -v for more info)."
             )
         else:
-            self.console.log(f"Schema updated for {config_file}.")
+            self.console.log(f"Schema updated for {pretty_path}.")
 
     def _run(self, config_file: Path) -> None:
         pretty_config_file_name = config_file.relative_to(self.configs_dir)
@@ -236,3 +237,11 @@ class AutoSchemaEventHandler(PatternMatchingEventHandler):
                 yaml_schemas[schema_key].remove(config_file_value)
             # NOTE: This doesn't work with comments.
             vscode_settings_file.write_text(json.dumps(vscode_settings, indent=4))
+
+
+def _pretty_path(path: Path) -> str:
+    return (
+        ("./" + str(path.relative_to(Path.cwd())))
+        if path.is_relative_to(Path.cwd())
+        else str(path)
+    )
