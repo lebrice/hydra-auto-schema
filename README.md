@@ -41,7 +41,7 @@ uv add git+https://www.github.com/lebrice/hydra-auto-schema
 pip install git+https://www.github.com/lebrice/hydra-auto-schema
 ```
 
-### Usage
+### Usage (CLI)
 
 Generate the yaml schemas for all the configs in the `configs` folder:
 
@@ -53,6 +53,27 @@ Watch for changes in the `configs` folder and update the schemas as needed:
 
 ```console
 hydra-auto-schema configs --watch
+```
+
+### Usage (Hydra)
+
+This package includes a Hydra plugin. By default, it will try to update all the schema files
+in your project's config directory when Hydra's main function is called.
+
+You don't really need to call anything for this to happen! Just keep using Hydra like you used to, and hopefully your config files will just feel much better to use! 😁
+
+To configure how the auto schema plugin is called by Hydra, you can add the following block somwehere before your main Hydra function:
+
+```python3
+from hydra_plugins.auto_schema import auto_schema_plugin
+
+auto_schema_plugin.config = auto_schema_plugin.AutoSchemaPluginConfig(
+    schemas_dir=... # Path where you want the schema files to be saved. Defaults to ".schemas",
+    regen_schemas=False,  # Whether to regenerate schemas even if the config did not change.
+    stop_on_error=False,
+    quiet=True,
+    add_headers=False,  # controls whether to add headers, use vscode settings, or either.
+)
 ```
 
 ## How to Contribute
