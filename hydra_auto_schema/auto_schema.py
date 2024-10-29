@@ -49,6 +49,7 @@ from hydra_auto_schema.hydra_schema import (
     PropertySchema,
     Schema,
 )
+from hydra_auto_schema.utils import pretty_path
 
 logger = get_logger(__name__)
 
@@ -111,7 +112,7 @@ def add_schemas_to_all_hydra_configs(
 
     for config_file in pbar:
         pretty_config_file_name = config_file.relative_to(configs_dir)
-        schema_file = _get_schema_file_path(config_file, schemas_dir)
+        schema_file = get_schema_file_path(config_file, schemas_dir)
 
         # todo: check the modification time. If the config file was modified after the schema file, regen the schema file.
 
@@ -336,7 +337,7 @@ def _add_schemas_to_vscode_settings(
         )
 
 
-def _get_schema_file_path(config_file: Path, schemas_dir: Path):
+def get_schema_file_path(config_file: Path, schemas_dir: Path):
     config_group = config_file.parent
     schema_file = schemas_dir / f"{config_group.name}_{config_file.stem}_schema.json"
     return schema_file
@@ -590,7 +591,7 @@ def _load_config(config_path: Path, configs_dir: Path, repo_root: Path) -> DictC
         config_path.relative_to(configs_dir).with_suffix("").parts
     )
     logger.debug(
-        f"config_path: ./{_relative_to_cwd(config_path)}, {config_groups=}, {config_name=}, configs_dir: {configs_dir}"
+        f"config_path: ./{pretty_path(config_path)}, {config_groups=}, {config_name=}, configs_dir: {configs_dir}"
     )
     config_group = "/".join(config_groups)
 

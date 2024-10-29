@@ -21,13 +21,15 @@ from hydra_auto_schema.auto_schema import (
     _add_schema_header,
     _add_schemas_to_vscode_settings,
     _create_schema_for_config,
-    _get_schema_file_path,
     _install_yaml_vscode_extension,
     _load_config,
     _read_json,
     add_schemas_to_all_hydra_configs,
+    get_schema_file_path,
     logger,
 )
+
+from .utils import pretty_path
 
 
 class AutoSchemaEventHandler(PatternMatchingEventHandler):
@@ -76,7 +78,7 @@ class AutoSchemaEventHandler(PatternMatchingEventHandler):
         )
         self.console = rich.console.Console()
         self.console.log(
-            f"Watching for changes in config files in the {_pretty_path(configs_dir)} directory."
+            f"Watching for changes in config files in the {pretty_path(configs_dir)} directory."
         )
 
     def on_created(self, event: DirCreatedEvent | FileCreatedEvent) -> None:
@@ -146,7 +148,7 @@ class AutoSchemaEventHandler(PatternMatchingEventHandler):
         return False
 
     def run(self, config_file: Path) -> None:
-        pretty_path = _pretty_path(config_file)
+        p = pretty_path(config_file)
         try:
             self._run(config_file)
         except Exception as exc:
@@ -155,15 +157,15 @@ class AutoSchemaEventHandler(PatternMatchingEventHandler):
                 raise
             sees_warning = logger.getEffectiveLevel() <= logging.WARNING
             self.console.log(
-                f"Unable to generate the schema for {pretty_path}."
+                f"Unable to generate the schema for {p}."
                 + ("" if sees_warning else " (use -v for more info).")
             )
         else:
-            self.console.log(f"Schema updated for {pretty_path}.")
+            self.console.log(f"Schema updated for {p}.")
 
     def _run(self, config_file: Path) -> None:
         pretty_config_file_name = config_file.relative_to(self.configs_dir)
-        schema_file = _get_schema_file_path(config_file, self.schemas_dir)
+        schema_file = get_schema_file_path(config_file, self.schemas_dir)
 
         logger.debug(f"Creating a schema for {pretty_config_file_name}")
         with warnings.catch_warnings():
@@ -209,7 +211,7 @@ class AutoSchemaEventHandler(PatternMatchingEventHandler):
         _add_schema_header(config_file, schema_path=schema_file)
 
     def _remove_schema_file(self, config_file: Path) -> None:
-        schema_file = _get_schema_file_path(config_file, self.schemas_dir)
+        schema_file = get_schema_file_path(config_file, self.schemas_dir)
         if self.add_headers:
             # Could also remove the schema file for this config file.
             logger.debug(
@@ -243,11 +245,3 @@ class AutoSchemaEventHandler(PatternMatchingEventHandler):
                 yaml_schemas[schema_key].remove(config_file_value)
             # NOTE: This doesn't work with comments.
             vscode_settings_file.write_text(json.dumps(vscode_settings, indent=4))
-
-
-def _pretty_path(path: Path) -> str:
-    return (
-        ("./" + str(path.relative_to(Path.cwd())))
-        if path.is_relative_to(Path.cwd())
-        else str(path)
-    )
