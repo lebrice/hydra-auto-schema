@@ -10,6 +10,7 @@ on:
     types: [published]
   workflow_dispatch:
 jobs:
+  # https://docs.pypi.org/trusted-publishers/using-a-publisher/
   publish:
     strategy:
       matrix:
@@ -17,6 +18,9 @@ jobs:
         os: [ubuntu-latest]
     runs-on: ${{ matrix.os }}
     environment: release
+    permissions:
+      # IMPORTANT: this permission is mandatory for trusted publishing
+      id-token: write
     steps:
       - uses: actions/checkout@v4
 
@@ -33,9 +37,14 @@ jobs:
       - name: Install dependencies
         run: uv sync --frozen
 
-      - name: Publish package
-        env:
-          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_TOKEN }}
+      - name: Build package
         run: |
           uv build
-          uv publish
+
+      # - name: Publish package distributions to PyPI
+      #   uses: pypa/gh-action-pypi-publish@release/v1
+
+      - name: Publish package (uv)
+        env:
+          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_TOKEN }}
+        run: uv publish
