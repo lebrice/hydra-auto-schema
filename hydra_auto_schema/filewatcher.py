@@ -1,5 +1,6 @@
 import datetime
 import json
+import logging
 import warnings
 from pathlib import Path
 
@@ -30,6 +31,8 @@ from hydra_auto_schema.auto_schema import (
 
 
 class AutoSchemaEventHandler(PatternMatchingEventHandler):
+    debounce_interval: datetime.timedelta = datetime.timedelta(seconds=3)
+
     def __init__(
         self,
         repo_root: Path,
@@ -134,7 +137,7 @@ class AutoSchemaEventHandler(PatternMatchingEventHandler):
 
         if (
             datetime.datetime.now() - self._last_updated[config_file]
-        ) < datetime.timedelta(seconds=5):
+        ) < self.debounce_interval:
             logger.debug(
                 f"Config file {config_file} was modified very recently; not regenerating the schema."
             )
@@ -147,10 +150,13 @@ class AutoSchemaEventHandler(PatternMatchingEventHandler):
         try:
             self._run(config_file)
         except Exception as exc:
-            logger.warning(f"Error while processing config at {config_file}: {exc}")
-            # TODO: Only add the "(use -v for more info)" if "-v" is not already set.
+            logger.warning(f"Error while processing config at {config_file}:\n{exc}")
+            if self.stop_on_error:
+                raise
+            sees_warning = logger.getEffectiveLevel() <= logging.WARNING
             self.console.log(
-                f"Unable to generate the schema for {pretty_path}. (use -v for more info)."
+                f"Unable to generate the schema for {pretty_path}."
+                + ("" if sees_warning else " (use -v for more info).")
             )
         else:
             self.console.log(f"Schema updated for {pretty_path}.")
