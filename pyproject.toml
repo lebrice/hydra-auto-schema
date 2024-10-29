@@ -1,6 +1,5 @@
 [project]
 name = "hydra-auto-schema"
-version = "0.0.1"
 description = "Automagically generate yaml schemas for your Hydra config files"
 readme = "README.md"
 authors = [{ name = "Fabrice Normandin", email = "normandf@mila.quebec" }]
@@ -15,17 +14,29 @@ dependencies = [
     "tqdm>=4.66.6",
     "watchdog>=5.0.3",
 ]
+dynamic = ["version"]
 [project.scripts]
 hydra-auto-schema = "hydra_auto_schema.__main__:main"
 
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling", "uv-dynamic-versioning"]
 build-backend = "hatchling.build"
 
+
+[tool.hatch.version]
+source = "uv-dynamic-versioning"
+
 [tool.uv]
-dev-dependencies = ["pytest>=8.3.3", "pytest-regressions>=2.5.0"]
+dev-dependencies = [
+    "pytest>=8.3.3",
+    "pytest-regressions>=2.5.0",
+    "uv-dynamic-versioning>=0.2.0",
+]
 managed = true
 
+[tool.uv-dynamic-versioning]
+vcs = "git"
+style = "semver"
 
 [tool.hatch.build.targets.wheel]
 packages = ["hydra_auto_schema", "hydra_plugins"]

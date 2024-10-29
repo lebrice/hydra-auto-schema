@@ -27,8 +27,11 @@ At the moment, we assume that you are using VSCode as your code editor. We use t
 ### uv (recommended)
 
 ```console
-uv tool install git+https://www.github.com/lebrice/hydra-auto-schema
+uv add git+https://www.github.com/lebrice/hydra-auto-schema
 ```
+
+> Note: This plugin needs to be installed in your project's virtual environment. It should not be installed as an isolated tool using `uv tool`.
+> This is because the plugin needs to import the modules where the `_target_`s are defined in order to inspect their signature.
 
 ### pip
 
