@@ -6,9 +6,7 @@ Automagically create yaml schemas for your Hydra config files!
 
 ## Demo
 
-<video width="100%" controls="">
-  <source src="https://github.com/user-attachments/assets/08f52d47-ebba-456d-95ef-ac9525d8e983" type="video/mp4">
-</video>
+https://github.com/user-attachments/assets/08f52d47-ebba-456d-95ef-ac9525d8e983
 
 ## Installation
 
