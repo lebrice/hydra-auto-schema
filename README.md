@@ -1,5 +1,7 @@
 # hydra-auto-schema
 
+[![codecov](https://codecov.io/gh/lebrice/hydra-auto-schema/graph/badge.svg?token=13DH8R352T)](https://codecov.io/gh/lebrice/hydra-auto-schema)
+
 This tool greatly improves the experience of developing a project with [Hydra](https://hydra.cc) by enabling rich IDE support for Hydra config files.
 
 > 📢 If you are thinking of using Hydra for a PyTorch or Jax-based ML project, you might want to take a look at the [Research Project Template](https://github.com/mila-iqia/ResearchTemplate/) where this plugin was originally created. This is also where this plugin is best integrated!
