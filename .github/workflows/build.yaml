@@ -74,7 +74,7 @@ jobs:
       - name: Install dependencies
         run: uv sync --frozen
       - name: Test with pytest
-        run: uv run pytest -v --cov=hydra_auto_schema --cov-report=xml --cov-append --skip-if-files-missing
+        run: uv run pytest -v --cov=hydra_auto_schema --cov-report=xml --cov-append
       - name: Store coverage report as an artifact
         uses: actions/upload-artifact@v4
         with:
