@@ -1,30 +1,31 @@
-from hydra_auto_schema.auto_schema import (
-    _add_schemas_to_vscode_settings,
-    _get_schema_file_path,
-    _install_yaml_vscode_extension,
-    _load_config,
-    _read_json,
-    _add_schema_header,
-    add_schemas_to_all_hydra_configs,
-    _create_schema_for_config,
-    logger,
-)
-
-
 import datetime
 import json
 import warnings
 from pathlib import Path
+
+import rich
 from watchdog.events import (
-    PatternMatchingEventHandler,
     DirCreatedEvent,
-    FileCreatedEvent,
-    DirModifiedEvent,
-    FileModifiedEvent,
     DirDeletedEvent,
-    FileDeletedEvent,
+    DirModifiedEvent,
     DirMovedEvent,
+    FileCreatedEvent,
+    FileDeletedEvent,
+    FileModifiedEvent,
     FileMovedEvent,
+    PatternMatchingEventHandler,
+)
+
+from hydra_auto_schema.auto_schema import (
+    _add_schema_header,
+    _add_schemas_to_vscode_settings,
+    _create_schema_for_config,
+    _get_schema_file_path,
+    _install_yaml_vscode_extension,
+    _load_config,
+    _read_json,
+    add_schemas_to_all_hydra_configs,
+    logger,
 )
 
 
@@ -70,12 +71,16 @@ class AutoSchemaEventHandler(PatternMatchingEventHandler):
             quiet=quiet,
             add_headers=add_headers,
         )
+        self.console = rich.console.Console()
+        self.console.log(
+            f"Watching for changes in config files in the {configs_dir} directory."
+        )
 
     def on_created(self, event: DirCreatedEvent | FileCreatedEvent) -> None:
         logger.debug(f"on_created event: {event.src_path}")
         if config_file := self._filter_config_file(event.src_path):
             logger.info(f"Config file was created: {config_file}")
-            self._run(config_file)
+            self.run(config_file)
 
     def on_deleted(self, event: DirDeletedEvent | FileDeletedEvent) -> None:
         logger.debug(f"on_deleted event: {event.src_path}")
@@ -92,7 +97,7 @@ class AutoSchemaEventHandler(PatternMatchingEventHandler):
             if self._debounce(config_file):
                 return
             logger.info(f"Config file was modified: {config_file}")
-            self._run(config_file)
+            self.run(config_file)
 
     def on_moved(self, event: DirMovedEvent | FileMovedEvent) -> None:
         logger.debug(f"on_moved event: {event.src_path}")
@@ -102,10 +107,10 @@ class AutoSchemaEventHandler(PatternMatchingEventHandler):
         if source_file and dest_file:
             logger.info(f"Config file was moved from {source_file} --> {dest_file}")
             self._remove_schema_file(source_file)
-            self._run(dest_file)
+            self.run(dest_file)
 
         if dest_file:
-            self._run(dest_file)
+            self.run(dest_file)
 
     def _filter_config_file(self, p: str | bytes) -> Path | None:
         config_file = Path(str(p))
@@ -136,6 +141,18 @@ class AutoSchemaEventHandler(PatternMatchingEventHandler):
             return True
         self._last_updated[config_file] = datetime.datetime.now()
         return False
+
+    def run(self, config_file: Path) -> None:
+        try:
+            self._run(config_file)
+        except Exception as exc:
+            logger.warning(f"Error while processing config at {config_file}: {exc}")
+            # TODO: Only add the "(use -v for more info)" if "-v" is not already set.
+            self.console.log(
+                f"Unable to generate the schema for {config_file}. (use -v for more info)."
+            )
+        else:
+            self.console.log(f"Schema updated for {config_file}.")
 
     def _run(self, config_file: Path) -> None:
         pretty_config_file_name = config_file.relative_to(self.configs_dir)
