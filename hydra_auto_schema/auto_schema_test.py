@@ -4,8 +4,8 @@ from pathlib import Path
 import pytest
 import yaml
 from pytest_regressions.file_regression import FileRegressionFixture
-from .auto_schema import _add_schema_header, _create_schema_for_config
 
+from .auto_schema import _add_schema_header, _create_schema_for_config
 
 REPO_ROOTDIR = Path.cwd()
 
@@ -57,6 +57,7 @@ def test_make_schema(config_file: Path, file_regression: FileRegressionFixture):
         config_file=config_file,
         configs_dir=config_dir,
         repo_root=REPO_ROOTDIR,
+        config_store=None,
     )
     _add_schema_header(config_file, schema_path=schema_file)
 

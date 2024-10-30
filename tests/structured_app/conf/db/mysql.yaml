@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=../../.schemas/db_mysql_schema.json
+# yaml-language-server: $schema=../../schemas/db_mysql_schema.json
 defaults:
   - base_mysql
 user: omry

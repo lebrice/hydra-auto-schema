@@ -188,5 +188,5 @@
     "bar"
   ],
   "type": "object",
-  "additionalProperties": true
+  "additionalProperties": false
 }

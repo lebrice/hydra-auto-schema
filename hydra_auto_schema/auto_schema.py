@@ -14,6 +14,7 @@ from __future__ import annotations
 import copy
 import dataclasses
 import datetime
+import functools
 import inspect
 import json
 import os.path
@@ -54,7 +55,6 @@ from hydra_auto_schema.hydra_schema import (
     Schema,
 )
 from hydra_auto_schema.utils import pretty_path
-from hydra_plugins.auto_schema import auto_schema_plugin
 
 logger = get_logger(__name__)
 
@@ -433,8 +433,8 @@ def _create_schema_for_config(
     # NOTE: Config files can also not have a target.
     # This sets additionalProperties to `false` if there is a structured config in the defaults
     # list, since `schema` will have been given a `_target_` above.
-    schema["additionalProperties"] = (
-        "_target_" not in config and "_target_" not in schema["properties"]
+    schema["additionalProperties"] = "_target_" not in config and (
+        "const" not in schema["properties"].get("_target_", {})
     )
 
     for keys, value in _all_subentries_with_target(_config_dict).items():
@@ -663,6 +663,14 @@ def _try_load_from_config_store(
     return None
 
 
+# NOTE: Tried to use `functools.cache` to prevent this from loading the plugins again, doesn't work
+# import hydra._internal.utils
+# hydra._internal.utils.create_config_search_path = functools.cache(
+#     hydra._internal.utils.create_config_search_path
+# )
+
+
+@functools.cache
 def _create_config_search_path(search_path_dir: str | None) -> ConfigSearchPath:
     from hydra.core.plugins import Plugins
     from hydra.plugins.search_path_plugin import SearchPathPlugin
@@ -676,8 +684,11 @@ def _create_config_search_path(search_path_dir: str | None) -> ConfigSearchPath:
     search_path_plugins = Plugins.instance().discover(SearchPathPlugin)
     for spp in search_path_plugins:
         # CHANGED this, to avoid the weird re-instantiation of our plugin type.
+        from hydra_plugins.auto_schema import auto_schema_plugin
+
         if spp is auto_schema_plugin.AutoSchemaPlugin:
             continue
+        # TODO: This will still call all the other plugins once per call to this function!
         plugin = spp()
         assert isinstance(plugin, SearchPathPlugin)
         plugin.manipulate_search_path(search_path)

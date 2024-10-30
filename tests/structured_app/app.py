@@ -63,13 +63,16 @@ cs.store(name="base_config", node=Config)
 cs.store(group="db", name="base_mysql", node=MySQLConfig)
 cs.store(group="db", name="base_postgresql", node=PostGreSQLConfig)
 
-auto_schema_plugin.config = auto_schema_plugin.AutoSchemaPluginConfig(
-    schemas_dir=Path(__file__).parent / ".schemas",
-    regen_schemas=True,
-    quiet=False,
-    add_headers=True,
-    verbose=True,
-    stop_on_error=True,
+
+auto_schema_plugin.configure(
+    auto_schema_plugin.AutoSchemaPluginConfig(
+        schemas_dir=Path(__file__).parent / "schemas",
+        regen_schemas=True,
+        quiet=False,
+        add_headers=True,
+        verbose=True,
+        stop_on_error=True,
+    )
 )
 
 

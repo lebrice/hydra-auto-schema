@@ -49,6 +49,12 @@ if "config" not in globals():
     config = None
 
 
+def configure(new_config: AutoSchemaPluginConfig) -> None:
+    global config
+    logger.debug(f"Setting the configuration for the AutoSchemaPlugin: {new_config}")
+    config = new_config
+
+
 class AutoSchemaPlugin(SearchPathPlugin):
     provider: str
     path: str
@@ -73,7 +79,6 @@ class AutoSchemaPlugin(SearchPathPlugin):
     def manipulate_search_path(self, search_path: ConfigSearchPath) -> None:
         # IDEA: Try to get the configs dir and the repo root from the search path, and call the
         # function on the config files in that directory.
-
         if type(self)._ALREADY_DID:
             # TODO: figure out what's causing this.
             logger.debug(f"Avoiding weird multiple calls to the {AutoSchemaPlugin}!")

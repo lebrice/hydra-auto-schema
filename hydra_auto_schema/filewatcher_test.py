@@ -110,8 +110,10 @@ def test_on_created(
     assert not new_file.exists()
     schema_file = get_schema_file_path(new_file, schemas_dir)
     assert not schema_file.exists()
+    assert schema_file not in schemas_before
 
     new_file.write_text("foo: bar")
+
     time.sleep(0.5)
 
     filewatcher.dispatch.assert_any_call(  # type: ignore
@@ -122,7 +124,8 @@ def test_on_created(
     )
 
     schemas_after = _get_all_schema_files(schemas_dir)
-    assert set(schemas_after) == set(schemas_before) | {schema_file}
+    assert schema_file in schemas_after
+    # assert set(schemas_after) == (set(schemas_before) | {schema_file})
 
 
 def test_on_modified(

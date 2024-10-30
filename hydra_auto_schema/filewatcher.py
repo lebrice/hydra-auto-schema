@@ -168,16 +168,24 @@ class AutoSchemaEventHandler(PatternMatchingEventHandler):
         schema_file = get_schema_file_path(config_file, self.schemas_dir)
 
         logger.debug(f"Creating a schema for {pretty_config_file_name}")
+        from hydra.core.config_store import ConfigStore
+
+        config_store = ConfigStore.instance()
+
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=UserWarning)
             config = _load_config(
-                config_file, configs_dir=self.configs_dir, repo_root=self.repo_root
+                config_file,
+                configs_dir=self.configs_dir,
+                repo_root=self.repo_root,
+                config_store=config_store,
             )
         schema = _create_schema_for_config(
             config,
             config_file=config_file,
             configs_dir=self.configs_dir,
             repo_root=self.repo_root,
+            config_store=config_store,
         )
         schema_file.parent.mkdir(exist_ok=True, parents=True)
         schema_file.write_text(json.dumps(schema, indent=2).rstrip() + "\n\n")

@@ -1,0 +1,3 @@
+defaults:
+  - base_foo
+bar: "overwritten value"
