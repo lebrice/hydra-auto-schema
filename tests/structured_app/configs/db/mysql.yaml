@@ -1,0 +1,4 @@
+defaults:
+  - base_mysql
+user: omry
+password: secret

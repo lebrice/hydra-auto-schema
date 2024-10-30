@@ -1,0 +1,7 @@
+defaults:
+  - base_config
+  - db: mysql
+  # See composition order note
+  - _self_
+
+debug: true
