@@ -221,16 +221,30 @@ def add_schemas_to_all_hydra_configs(
         _add_schema_header(config_file, schema_path=schema_file)
 
 
+def _get_gitignore_path(repo_root: Path) -> Path:
+    for parent in repo_root.parents:
+        if (gitignore_file := (parent / ".gitignore")).exists():
+            return gitignore_file
+    return repo_root / ".gitignore"
+
+
 def _add_schemas_dir_to_gitignore(schemas_dir: Path, repo_root: Path):
-    _rel = schemas_dir.relative_to(repo_root)
-    _gitignore_file = repo_root / ".gitignore"
+    gitignore_file = _get_gitignore_path(repo_root)
+    if not schemas_dir.is_relative_to(gitignore_file.parent):
+        # The schemas dir is not under the same directory as the gitignore file, so we can't add it.
+        return
+
+    _rel = schemas_dir.relative_to(gitignore_file.parent)
+    if not gitignore_file.exists():
+        gitignore_file.write_text(f"{_rel}\n")
+        return
     if not any(
-        line.startswith(str(_rel)) for line in _gitignore_file.read_text().splitlines()
+        line.startswith(str(_rel)) for line in gitignore_file.read_text().splitlines()
     ):
         logger.info(
             f"Adding entry in .gitignore for the schemas directory ({schemas_dir})"
         )
-        with _gitignore_file.open("a") as f:
+        with gitignore_file.open("a") as f:
             f.write(f"{_rel}\n")
 
 

@@ -9,6 +9,10 @@ from hydra.plugins.search_path_plugin import SearchPathPlugin
 
 from hydra_auto_schema.auto_schema import add_schemas_to_all_hydra_configs, logger
 
+# TODO: Perhaps this should be a different kind of plugin, one that has access to the structured
+# schemas within the hydra app, so it could be executed later when calling the `hydra.main`
+# function?
+
 
 def register_auto_schema_plugin():
     hydra.core.plugins.Plugins.instance().register(AutoSchemaPlugin)
