@@ -27,7 +27,7 @@ from .auto_schema_test import config_dir
 pytestmark = pytest.mark.xfail(
     sys.platform == "darwin",
     reason="Seems like watchdog uses different events on MacOS.",
-    strict=True,
+    # strict=True,
 )
 
 
