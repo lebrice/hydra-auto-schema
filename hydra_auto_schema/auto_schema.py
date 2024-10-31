@@ -18,6 +18,7 @@ import inspect
 import json
 import os.path
 import subprocess
+import sys
 import typing
 import warnings
 from collections.abc import Callable, MutableMapping
@@ -132,7 +133,7 @@ def add_schemas_to_all_hydra_configs(
                 )
             elif regen_schemas:
                 pass  # regenerate it.
-            elif _is_incomplete_schema(schema_file):
+            elif sys.platform == "linux" and _is_incomplete_schema(schema_file):
                 logger.info(
                     f"Unable to properly create the schema for {pretty_config_file_name} last time. Trying again."
                 )
@@ -159,7 +160,8 @@ def add_schemas_to_all_hydra_configs(
             )
             schema_file.parent.mkdir(exist_ok=True, parents=True)
             schema_file.write_text(json.dumps(schema, indent=2).rstrip() + "\n\n")
-            _set_is_incomplete_schema(schema_file, False)
+            if sys.platform == "linux":
+                _set_is_incomplete_schema(schema_file, False)
         except (
             pydantic.errors.PydanticSchemaGenerationError,
             hydra.errors.MissingConfigException,
@@ -178,12 +180,13 @@ def add_schemas_to_all_hydra_configs(
             schema = copy.deepcopy(HYDRA_CONFIG_SCHEMA)
             schema["additionalProperties"] = True
             schema["title"] = f"Partial schema for {pretty_config_file_name}"
-            schema[
-                "description"
-            ] = f"(errors occurred while trying to create the schema from the signature:\n{exc}"
+            schema["description"] = (
+                f"(errors occurred while trying to create the schema from the signature:\n{exc}"
+            )
             schemas_dir.mkdir(exist_ok=True, parents=True)
             schema_file.write_text(json.dumps(schema, indent=2) + "\n")
-            _set_is_incomplete_schema(schema_file, True)
+            if sys.platform == "linux":
+                _set_is_incomplete_schema(schema_file, True)
 
         config_file_to_schema_file[config_file] = schema_file
 

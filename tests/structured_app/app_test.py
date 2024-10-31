@@ -1,7 +1,7 @@
 """ TODO: Tests for getting the schema from structured configs. """
+
 import shutil
 import subprocess
-import textwrap
 from pathlib import Path
 
 import pytest
@@ -39,17 +39,12 @@ def test_structured_app(
         text=True,
     )
     assert result.returncode == 1
-    assert result.stderr == textwrap.dedent(
-        """\
-        Error merging override db.port=fail
-        Value 'fail' of type 'str' could not be converted to Integer
-            full_key: db.port
-            reference_type=DBConfig
-            object_type=MySQLConfig
-
-        Set the environment variable HYDRA_FULL_ERROR=1 for a complete stack trace.
-        """
+    assert (
+        "Value 'fail' of type 'str' could not be converted to Integer" in result.stderr
     )
+    assert "full_key: db.port" in result.stderr
+    assert "reference_type=DBConfig" in result.stderr
+    assert "object_type=MySQLConfig" in result.stderr
     # TODO:
     # schemas_dir = new_repo_root / ".schemas"
     # assert schemas_dir.exists()
