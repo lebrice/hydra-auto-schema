@@ -401,12 +401,6 @@ def _create_schema_for_config(
         - Should ideally load the defaults and merge this schema on top of them.
     """
 
-    _config_dict = (
-        OmegaConf.to_container(config, resolve=False)
-        if isinstance(config, DictConfig)
-        else config
-    )
-    assert isinstance(_config_dict, dict)
     # Start from the base schema for any Hydra configs.
     schema = copy.deepcopy(HYDRA_CONFIG_SCHEMA)
 
@@ -436,7 +430,12 @@ def _create_schema_for_config(
     schema["additionalProperties"] = "_target_" not in config and (
         "const" not in schema["properties"].get("_target_", {})
     )
-
+    _config_dict = (
+        OmegaConf.to_container(config, resolve=False)
+        if isinstance(config, DictConfig)
+        else config
+    )
+    assert isinstance(_config_dict, dict)
     for keys, value in _all_subentries_with_target(_config_dict).items():
         is_top_level: bool = not keys
 
@@ -515,12 +514,28 @@ def _update_schema_from_defaults(
                     other_config_path = other_config_path.with_suffix(suffix)
                     break
 
-        default_config = _load_config(
-            other_config_path,
-            configs_dir=configs_dir,
-            repo_root=repo_root,
-            config_store=config_store,
-        )
+        # We don't have the configstore, and the other config doesn't exist!
+        if (
+            config_store is None
+            and not other_config_path.exists()
+            and (
+                _config := _try_load_from_config_store(
+                    other_config_path,
+                    config_store=(_config_store := ConfigStore.instance()),
+                    configs_dir=configs_dir,
+                )
+            )
+        ):
+            default_config = _config
+            config_store = _config_store
+        else:
+            default_config = _load_config(
+                other_config_path,
+                configs_dir=configs_dir,
+                repo_root=repo_root,
+                config_store=config_store,
+            )
+
         if config_store and "_target_" not in default_config:
             # (object_type := default_config._metadata.object_type) is not DictConfig
             object_type = default_config._metadata.object_type
