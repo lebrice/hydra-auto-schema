@@ -1,4 +1,5 @@
 """ TODO: Tests for getting the schema from structured configs. """
+
 import shutil
 import subprocess
 import textwrap
@@ -39,8 +40,9 @@ def test_structured_app(
         text=True,
     )
     assert result.returncode == 1
-    assert result.stderr == textwrap.dedent(
-        """\
+    assert (
+        textwrap.dedent(
+            """\
         Error merging override db.port=fail
         Value 'fail' of type 'str' could not be converted to Integer
             full_key: db.port
@@ -49,6 +51,8 @@ def test_structured_app(
 
         Set the environment variable HYDRA_FULL_ERROR=1 for a complete stack trace.
         """
+        )
+        in result.stderr
     )
     # TODO:
     # schemas_dir = new_repo_root / ".schemas"
