@@ -101,7 +101,7 @@ def test_get_same_output_as_in_example(
     assert files
     for file in files:
         file_regression.check(
-            (schemas_dir / file.name).read_text(),
+            (schemas_dir / file.name).read_text().rstrip(),
             extension=".json",
             fullpath=structured_app_dir / "schemas" / file.name,
         )

@@ -3,6 +3,7 @@ from pathlib import Path
 
 import pytest
 import yaml
+from hydra.core.config_store import ConfigStore
 from pytest_regressions.file_regression import FileRegressionFixture
 
 from .auto_schema import _add_schema_header, _create_schema_for_config
@@ -57,7 +58,7 @@ def test_make_schema(config_file: Path, file_regression: FileRegressionFixture):
         config_file=config_file,
         configs_dir=config_dir,
         repo_root=REPO_ROOTDIR,
-        config_store=None,
+        config_store=ConfigStore.instance(),
     )
     _add_schema_header(config_file, schema_path=schema_file)
 
