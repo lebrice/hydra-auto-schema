@@ -43,6 +43,11 @@ def configs_dir(repo_root: Path):
     test_configs_dir = repo_root / "configs"
     shutil.copytree(config_dir, test_configs_dir)
     shutil.copy(config_dir.parent / "app.py", repo_root)
+
+    # TODO: The structured configs stuff isn't working with the filewatcher atm.
+    (test_configs_dir / "__init__.py").unlink()
+    (test_configs_dir / "with_structured_default.yaml").unlink()
+
     return test_configs_dir
 
 

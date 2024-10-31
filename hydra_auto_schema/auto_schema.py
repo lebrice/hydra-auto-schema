@@ -41,6 +41,8 @@ from hydra._internal.config_loader_impl import ConfigLoaderImpl
 from hydra._internal.config_search_path_impl import ConfigSearchPathImpl
 from hydra.core.config_search_path import ConfigSearchPath
 from hydra.core.config_store import ConfigStore
+from hydra.core.plugins import Plugins
+from hydra.plugins.search_path_plugin import SearchPathPlugin
 from hydra.types import RunMode
 from omegaconf import DictConfig, OmegaConf
 from pydantic.json_schema import GenerateJsonSchema, JsonSchemaValue
@@ -158,7 +160,7 @@ def add_schemas_to_all_hydra_configs(
             logger.debug(f"Creating a schema for {pretty_config_file_name}")
             with warnings.catch_warnings():
                 warnings.filterwarnings("ignore", category=UserWarning)
-                config = _load_config(
+                config = load_config(
                     config_file,
                     configs_dir=configs_dir,
                     repo_root=repo_root,
@@ -529,7 +531,7 @@ def _update_schema_from_defaults(
             default_config = _config
             config_store = _config_store
         else:
-            default_config = _load_config(
+            default_config = load_config(
                 other_config_path,
                 configs_dir=configs_dir,
                 repo_root=repo_root,
@@ -687,9 +689,6 @@ def _try_load_from_config_store(
 
 @functools.cache
 def _create_config_search_path(search_path_dir: str | None) -> ConfigSearchPath:
-    from hydra.core.plugins import Plugins
-    from hydra.plugins.search_path_plugin import SearchPathPlugin
-
     search_path = ConfigSearchPathImpl()
     search_path.append("hydra", "pkg://hydra.conf")
 
@@ -713,12 +712,17 @@ def _create_config_search_path(search_path_dir: str | None) -> ConfigSearchPath:
     return search_path
 
 
-def _load_config(
+def load_config(
     config_path: Path,
     configs_dir: Path,
     repo_root: Path,
     config_store: ConfigStore | None,
 ) -> DictConfig:
+    """Super overly-complicated function that tries to load a Hydra configuration file.
+
+    This is in large part because Hydra's internal code is *very* complicated.
+    """
+
     if config_store is not None and (
         config := _try_load_from_config_store(
             config_path, configs_dir=configs_dir, config_store=config_store
@@ -744,8 +748,10 @@ def _load_config(
         config_module = str(configs_dir.relative_to(repo_root)).replace("/", ".")
         # TODO: This is actually calling our plugin (AGAIN!)
         search_path = _create_config_search_path(f"pkg://{config_module}")
+        logger.debug(f"Search path for a config module: {search_path}")
     else:
         search_path = _create_config_search_path(str(configs_dir))
+        logger.debug(f"Search path for a config dir: {search_path}")
 
     if _has_package_global_line(config_path):
         # Tricky: Here we load the global config but with the given config as an override.

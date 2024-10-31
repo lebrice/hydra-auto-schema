@@ -22,10 +22,10 @@ from hydra_auto_schema.auto_schema import (
     _add_schemas_to_vscode_settings,
     _create_schema_for_config,
     _install_yaml_vscode_extension,
-    _load_config,
     _read_json,
     add_schemas_to_all_hydra_configs,
     get_schema_file_path,
+    load_config,
     logger,
 )
 
@@ -75,6 +75,7 @@ class AutoSchemaEventHandler(PatternMatchingEventHandler):
             stop_on_error=stop_on_error,
             quiet=quiet,
             add_headers=add_headers,
+            config_store=None,  # todo: could also try ConfigStore.instance()?
         )
         self.console = rich.console.Console()
         self.console.log(
@@ -174,7 +175,7 @@ class AutoSchemaEventHandler(PatternMatchingEventHandler):
 
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=UserWarning)
-            config = _load_config(
+            config = load_config(
                 config_file,
                 configs_dir=self.configs_dir,
                 repo_root=self.repo_root,

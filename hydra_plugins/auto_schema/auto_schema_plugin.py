@@ -113,7 +113,7 @@ class AutoSchemaPlugin(SearchPathPlugin):
             else:
                 # TODO: Check for file:// prefixes?
                 configs_dir = Path(search_path_entry.path)
-                assert configs_dir.is_dir()
+                assert configs_dir.is_dir(), configs_dir
                 repo_root = configs_dir.parent  # wild assumption, no?
 
             if not (repo_root.is_dir() and configs_dir.is_dir()):
