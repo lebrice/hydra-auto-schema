@@ -183,6 +183,10 @@ def test_on_moved(
 
     old_file.rename(new_file)
     time.sleep(0.5)
+    # FIXME: remove once the CI works for MacOS.
+    print("Method calls:\n")
+    for method_call in filewatcher.method_calls:  # type: ignore
+        print(f"- {method_call}\n")
 
     filewatcher.dispatch.assert_any_call(  # type: ignore
         FileMovedEvent(
