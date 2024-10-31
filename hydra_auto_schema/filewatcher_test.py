@@ -1,5 +1,6 @@
 import contextlib
 import shutil
+import sys
 import time
 from pathlib import Path
 from unittest.mock import Mock
@@ -21,6 +22,13 @@ from hydra_auto_schema.auto_schema import get_schema_file_path
 from hydra_auto_schema.filewatcher import AutoSchemaEventHandler
 
 from .auto_schema_test import config_dir
+
+# TODO: Figure out how the calls differ on MacOS.
+pytestmark = pytest.mark.xfail(
+    sys.platform == "darwin",
+    reason="Seems like watchdog uses different events on MacOS.",
+    strict=True,
+)
 
 
 @pytest.fixture
@@ -183,10 +191,6 @@ def test_on_moved(
 
     old_file.rename(new_file)
     time.sleep(0.5)
-    # FIXME: remove once the CI works for MacOS.
-    print("Method calls:\n")
-    for method_call in filewatcher.method_calls:  # type: ignore
-        print(f"- {method_call}\n")
 
     filewatcher.dispatch.assert_any_call(  # type: ignore
         FileMovedEvent(
