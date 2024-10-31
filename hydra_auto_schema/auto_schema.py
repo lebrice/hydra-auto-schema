@@ -746,7 +746,6 @@ def load_config(
     # FIXME!
     if configs_dir.is_relative_to(repo_root) and (configs_dir / "__init__.py").exists():
         config_module = str(configs_dir.relative_to(repo_root)).replace("/", ".")
-        # TODO: This is actually calling our plugin (AGAIN!)
         search_path = _create_config_search_path(f"pkg://{config_module}")
         logger.debug(f"Search path for a config module: {search_path}")
     else:
