@@ -113,9 +113,8 @@ def test_run_example(
 @pytest.mark.parametrize(
     command_line_arguments.__name__, ["--config-name=with_overrides"], indirect=True
 )
-def test_run_example_with_config_name(
+def test_run_example_with_overrides(
     structured_app_result: subprocess.CompletedProcess,
-    new_repo_root: Path,
     new_schemas_dir: Path,
     file_regression: FileRegressionFixture,
 ):

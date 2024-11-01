@@ -97,7 +97,7 @@ def add_schemas_to_all_hydra_configs(
             - If False, only use VSCode settings.
             - If True, only add headers.
     """
-
+    config_store = config_store or ConfigStore.instance()
     config_files = _yaml_files_in(configs_dir)
     if not config_files:
         warnings.warn(RuntimeWarning("No config files were passed. Skipping."))
@@ -510,17 +510,19 @@ def _update_schema_from_defaults(
         )
 
         if "_target_" not in default_config:
-            # (object_type := default_config._metadata.object_type) is not DictConfig
             object_type = default_config._metadata.object_type
-            # logger.debug(
-            #     f"Setting target based on the structured config type: {object_type}"
-            # )
-            # TODO: Need to check what the default is for object_type when `default_config` is not
-            # a structured config.
-            with omegaconf.open_dict(default_config):
-                default_config["_target_"] = (
-                    object_type.__module__ + "." + object_type.__qualname__
-                )
+            logger.debug(f"{default=} {object_type=}")
+            # TODO: if `object_type` is `dict`, this *may* be because the default config is:
+            # {some_key: {some_value: thing_from_default}}
+            if object_type is not dict:
+                # todo: Figure out other examples where the object type is `dict` than the one above:
+                # For now here we assume that the target is the same as the current one. Don't add one.
+                # TODO: Need to check what the default is for object_type when `default_config` is not
+                # a structured config.
+                with omegaconf.open_dict(default_config):
+                    default_config["_target_"] = (
+                        object_type.__module__ + "." + object_type.__qualname__
+                    )
 
         schema_of_default = _create_schema_for_config(
             config=default_config,
@@ -559,21 +561,64 @@ def load_default_config(
     default: str | dict[str, str],
     repo_root: Path,
 ) -> tuple[DictConfig, Path]:
-    """Loads the config pointed to by the given "defaults" entry in this config file."""
+    """Loads the config pointed to by the given "defaults" entry in this config file.
+
+    https://hydra.cc/docs/advanced/defaults_list/
+    """
     assert "@" not in default  # TODO!
 
     if isinstance(default, str):
         assert not default.startswith("/")  # TODO!
         other_config_path = config_file.parent / default
     else:
+        # TODO: It's more complicated that that! We need to also apply the default at the entry.
+        # BUG: "override /db: something" should put the schema for `something` at key `db`!
         assert len(default) == 1
         key, val = next(iter(default.items()))
         key = key.removeprefix("override ")
+        key = key.removeprefix("optional ")
+        key = key.strip()
+
+        where_to_set = key.removeprefix("/").split("/")
         if key.startswith("/"):
-            other_config_path = configs_dir / key / val
+            other_config_path = configs_dir / key.removeprefix("/") / val
         else:
             other_config_path = config_file.parent / key / val
-    logger.debug(f"Loading config of default {default}.")
+
+        logger.debug(
+            f"Loading config of default {default} with 'path': {pretty_path(other_config_path)}"
+        )
+
+        if not other_config_path.suffix:
+            # If the other config file has the name without the extension, try both .yml and .yaml.
+            for suffix in (".yml", ".yaml"):
+                if other_config_path.with_suffix(suffix).exists():
+                    other_config_path = other_config_path.with_suffix(suffix)
+                    break
+        default_config = load_config(
+            other_config_path,
+            configs_dir=configs_dir,
+            repo_root=repo_root,
+            config_store=ConfigStore.instance(),
+        )
+        if not where_to_set:
+            return default_config
+
+        default_config_result = {}
+        result = default_config_result
+        for i, parent in enumerate(where_to_set):
+            if i == len(where_to_set) - 1:
+                result[parent] = default_config
+            else:
+                result[parent] = {}
+            result = result[parent]
+        default_config = OmegaConf.create(default_config_result)
+        # logger.info(f"{default_config=}, {where_to_set=}")
+        return default_config, other_config_path
+
+    logger.debug(
+        f"Loading config of default {default} with 'path': {pretty_path(other_config_path)}"
+    )
 
     if not other_config_path.suffix:
         # If the other config file has the name without the extension, try both .yml and .yaml.
@@ -581,14 +626,14 @@ def load_default_config(
             if other_config_path.with_suffix(suffix).exists():
                 other_config_path = other_config_path.with_suffix(suffix)
                 break
-
+    default_config = load_config(
+        other_config_path,
+        configs_dir=configs_dir,
+        repo_root=repo_root,
+        config_store=ConfigStore.instance(),
+    )
     return (
-        load_config(
-            other_config_path,
-            configs_dir=configs_dir,
-            repo_root=repo_root,
-            config_store=ConfigStore.instance(),
-        ),
+        default_config,
         other_config_path,
     )
 
@@ -735,11 +780,10 @@ def load_config(
 
     This is in large part because Hydra's internal code is *very* complicated.
     """
+    config_store = config_store or ConfigStore.instance()
 
-    if config_store is not None and (
-        config := _try_load_from_config_store(
-            config_path, configs_dir=configs_dir, config_store=config_store
-        )
+    if config := _try_load_from_config_store(
+        config_path, configs_dir=configs_dir, config_store=config_store
     ):
         return config
 
