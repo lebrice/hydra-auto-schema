@@ -396,6 +396,7 @@ def _create_schema_for_config(
     configs_dir: Path,
     repo_root: Path,
     config_store: ConfigStore | None,
+    _ignore_defaults: bool = False,
 ) -> Schema | ObjectSchema:
     """IDEA: Create a schema for the given config.
 
@@ -411,7 +412,7 @@ def _create_schema_for_config(
     pretty_path = config_file.relative_to(configs_dir) if configs_dir else config_file
     schema["title"] = f"Auto-generated schema for {pretty_path}"
 
-    if config_file.exists():
+    if config_file.exists() and not _ignore_defaults:
         # note: the `defaults` list gets consumed by Hydra in `_load_config`, so we re-read the
         # config file to get the `defaults`, if present.
         cfg_raw = yaml.safe_load(config_file.read_text())
@@ -526,10 +527,16 @@ def _update_schema_from_defaults(
 
         schema_of_default = _create_schema_for_config(
             config=default_config,
-            config_file=default_config_file,
+            # TODO: Something wrong about the `default_config_file` here. If the default
+            # is something like {"a": {"b": some_config}} and default_config_file is "{config_dir/a/b/some_config}",
+            # We shouldn't just recurse infinitely though!
+            config_file=(
+                default_config_file if isinstance(default, str) else config_file
+            ),
             configs_dir=configs_dir,
             repo_root=repo_root,
             config_store=config_store,
+            _ignore_defaults=True,
         )
         # SUPER VERBOSE:
         # logger.debug(f"Schema from default {default}: {schema_of_default}")
@@ -578,7 +585,7 @@ def load_default_config(
         key = key.removeprefix("override ")
         key = key.removeprefix("optional ")
         key = key.strip()
-
+        assert key
         where_to_set = key.removeprefix("/").split("/")
         if key.startswith("/"):
             other_config_path = configs_dir / key.removeprefix("/") / val
@@ -601,8 +608,9 @@ def load_default_config(
             repo_root=repo_root,
             config_store=ConfigStore.instance(),
         )
-        if not where_to_set:
-            return default_config
+        assert where_to_set
+        # if not where_to_set:
+        #     return default_config, other_config_path
 
         default_config_result = {}
         result = default_config_result
@@ -613,6 +621,7 @@ def load_default_config(
                 result[parent] = {}
             result = result[parent]
         default_config = OmegaConf.create(default_config_result)
+        logger.info(f"{default=}, {where_to_set=}, {default_config=}")
         # logger.info(f"{default_config=}, {where_to_set=}")
         return default_config, other_config_path
 

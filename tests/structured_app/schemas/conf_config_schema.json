@@ -70,36 +70,6 @@
       "title": "Recursive",
       "description": "Whether instantiating this config should recursively instantiate children configs.\nSee: https://hydra.cc/docs/advanced/instantiate_objects/overview/#recursive-instantiation"
     },
-    "driver": {
-      "default": "mysql",
-      "title": "Driver",
-      "type": "string",
-      "description": "The driver parameter of the MySQLConfig."
-    },
-    "host": {
-      "default": "localhost",
-      "title": "Host",
-      "type": "string",
-      "description": "The host parameter of the MySQLConfig."
-    },
-    "port": {
-      "default": 3306,
-      "title": "Port",
-      "type": "integer",
-      "description": "The port parameter of the MySQLConfig."
-    },
-    "user": {
-      "default": "???",
-      "title": "User",
-      "type": "string",
-      "description": "The user parameter of the MySQLConfig."
-    },
-    "password": {
-      "default": "???",
-      "title": "Password",
-      "type": "string",
-      "description": "The password parameter of the MySQLConfig."
-    },
     "db": {
       "$ref": "#/$defs/DBConfig",
       "default": "???",
@@ -217,7 +187,7 @@
       "_target_"
     ]
   },
-  "type": "object",
+  "additionalProperties": false,
   "$defs": {
     "DBConfig": {
       "properties": {
@@ -241,5 +211,5 @@
       "type": "object"
     }
   },
-  "additionalProperties": false
+  "type": "object"
 }
