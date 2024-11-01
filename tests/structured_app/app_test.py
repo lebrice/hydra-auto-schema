@@ -21,9 +21,16 @@ def new_repo_root(tmp_path: Path):
     return new_repo_root
 
 
+@pytest.fixture(params=[True, False])
+def schemas_already_exist(request: pytest.FixtureRequest):
+    return request.param
+
+
 @pytest.fixture
-def new_schemas_dir(new_repo_root: Path):
-    shutil.rmtree(schemas_dir := new_repo_root / "schemas", ignore_errors=True)
+def new_schemas_dir(new_repo_root: Path, schemas_already_exist: bool):
+    schemas_dir = new_repo_root / "schemas"
+    if not schemas_already_exist:
+        shutil.rmtree(schemas_dir, ignore_errors=True)
     return schemas_dir
 
 
