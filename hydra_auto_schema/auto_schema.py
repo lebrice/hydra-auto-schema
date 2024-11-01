@@ -14,7 +14,6 @@ from __future__ import annotations
 import copy
 import dataclasses
 import datetime
-import functools
 import inspect
 import json
 import os.path
@@ -28,6 +27,7 @@ from pathlib import Path
 from typing import Any, TypeVar
 
 import docstring_parser as dp
+import hydra.conf
 import hydra.errors
 import hydra.plugins
 import hydra.utils
@@ -36,11 +36,10 @@ import omegaconf
 import pydantic
 import pydantic.schema
 import tqdm
-import yaml
 from hydra._internal.config_loader_impl import ConfigLoaderImpl
 from hydra._internal.config_search_path_impl import ConfigSearchPathImpl
 from hydra.core.config_search_path import ConfigSearchPath
-from hydra.core.config_store import ConfigStore
+from hydra.core.config_store import ConfigNode, ConfigStore
 from hydra.core.plugins import Plugins
 from hydra.plugins.search_path_plugin import SearchPathPlugin
 from hydra.types import RunMode
@@ -61,6 +60,10 @@ from hydra_auto_schema.utils import pretty_path
 logger = get_logger(__name__)
 
 config = None
+
+K = TypeVar("K")
+V = TypeVar("V")
+PossiblyNestedDict = dict[K, V | "PossiblyNestedDict[K, V]"]
 
 
 def _yaml_files_in(configs_dir: Path) -> list[Path]:
@@ -156,10 +159,22 @@ def add_schemas_to_all_hydra_configs(
 
         pbar.set_postfix_str(f"Creating schema for {pretty_config_file_name}")
 
+        # We'll modify the config store so that we treat structured configs as if they
+        # had a _target_ corresponding to the structured class.
+        # This helps us create the schemas.
+        # We later reset this to not affect the config loading in the Hydra application.
+        config_store_backup: PossiblyNestedDict[str, ConfigNode] = copy.deepcopy(
+            config_store.repo
+        )
+
         try:
             logger.debug(f"Creating a schema for {pretty_config_file_name}")
+
             with warnings.catch_warnings():
                 warnings.filterwarnings("ignore", category=UserWarning)
+                # TODO: Can we somehow get that the ConfigStore entries should
+                # be used as targets?
+                # Maybe using the _convert_ param of Hydra?
                 config = load_config(
                     config_file,
                     configs_dir=configs_dir,
@@ -202,6 +217,8 @@ def add_schemas_to_all_hydra_configs(
             schema_file.write_text(json.dumps(schema, indent=2) + "\n")
             if sys.platform == "linux":
                 _set_is_incomplete_schema(schema_file, True)
+        finally:
+            config_store.repo = config_store_backup
 
         config_file_to_schema_file[config_file] = schema_file
 
@@ -301,9 +318,7 @@ def _read_json(file: Path) -> dict:
     # Remove any trailing commas from the content:
     file_contents = (
         # Remove any trailing "," that would make it invalid JSON.
-        "".join(file_contents.split())
-        .replace(",}", "}")
-        .replace(",]", "]")
+        "".join(file_contents.split()).replace(",}", "}").replace(",]", "]")
     )
     return json.loads(file_contents)
 
@@ -396,7 +411,6 @@ def _create_schema_for_config(
     configs_dir: Path,
     repo_root: Path,
     config_store: ConfigStore | None,
-    _ignore_defaults: bool = False,
 ) -> Schema | ObjectSchema:
     """IDEA: Create a schema for the given config.
 
@@ -411,23 +425,6 @@ def _create_schema_for_config(
 
     pretty_path = config_file.relative_to(configs_dir) if configs_dir else config_file
     schema["title"] = f"Auto-generated schema for {pretty_path}"
-
-    if config_file.exists() and not _ignore_defaults:
-        # note: the `defaults` list gets consumed by Hydra in `_load_config`, so we re-read the
-        # config file to get the `defaults`, if present.
-        cfg_raw = yaml.safe_load(config_file.read_text())
-        defaults: list[str | dict[str, str]] | None = cfg_raw.get("defaults")
-        # TODO: There still defaults here, only during unit tests, even though _load_config should
-        # have consumed them!
-        if defaults:
-            schema = _update_schema_from_defaults(
-                config_file=config_file,
-                schema=schema,
-                defaults=defaults,
-                configs_dir=configs_dir,
-                repo_root=repo_root,
-                config_store=config_store,
-            )
 
     # NOTE: Config files can also not have a target.
     # This sets additionalProperties to `false` if there is a structured config in the defaults
@@ -536,7 +533,6 @@ def _update_schema_from_defaults(
             configs_dir=configs_dir,
             repo_root=repo_root,
             config_store=config_store,
-            _ignore_defaults=True,
         )
         # SUPER VERBOSE:
         # logger.debug(f"Schema from default {default}: {schema_of_default}")
@@ -754,7 +750,7 @@ def _try_load_from_config_store(
 # )
 
 
-@functools.cache
+# @functools.cache
 def _create_config_search_path(search_path_dir: str | None) -> ConfigSearchPath:
     search_path = ConfigSearchPathImpl()
     search_path.append("hydra", "pkg://hydra.conf")
@@ -783,14 +779,64 @@ def load_config(
     config_path: Path,
     configs_dir: Path,
     repo_root: Path,
-    config_store: ConfigStore | None,
+    config_store: ConfigStore,
 ) -> DictConfig:
     """Super overly-complicated function that tries to load a Hydra configuration file.
 
     This is in large part because Hydra's internal code is *very* complicated.
     """
-    config_store = config_store or ConfigStore.instance()
 
+    # from hydra._internal.core_plugins.basic_launcher import BasicLauncherConf  # noqa
+    # from hydra._internal.core_plugins.basic_sweeper import BasicSweeperConf  # noqa
+
+    def _set_node_target(entry: ConfigNode | PossiblyNestedDict[str, ConfigNode]):
+        if isinstance(entry, dict):
+            for _key, value in entry.items():
+                _set_node_target(value)
+        else:
+            if "_target_" in entry.node:
+                return
+            target = entry.node._metadata.object_type
+            if target is dict:
+                assert entry.name == "_dummy_empty_config_.yaml"
+                return
+            if (
+                entry.name == "config.yaml"
+                and entry.package is None
+                and target is hydra.conf.HydraConf
+                and entry.group == "hydra"
+            ):
+                return
+                defaults = entry.node["defaults"]
+                with omegaconf.open_dict(entry.node):
+                    new_defaults = copy.deepcopy(defaults)
+                    for i, default in enumerate(defaults):
+                        if not (
+                            isinstance(default, dict | DictConfig) and len(default) == 1
+                        ):
+                            continue
+                        k, v = next(iter(default.items()))
+                        if k in ["launcher", "sweeper"] and not v.endswith(".yaml"):
+                            v = f"{v}.yaml"  # weird hack, seems to make it load somehow?
+                        new_defaults[i] = {k: v}
+                    logger.debug(f"New defaults: {new_defaults}")
+                    entry.node["defaults"] = new_defaults
+
+            logger.debug(
+                f"Setting target for structured config node {entry} to {target}"
+            )
+            with omegaconf.open_dict(entry.node):
+                target = f"{target.__module__}.{target.__qualname__}"
+                entry.node["_target_"] = target
+
+    for key, entry in config_store.repo.items():
+        _set_node_target(entry)
+        # with omegaconf.open_dict(entry.node):
+        #     entry.node["_target_"] = entry.node._metadata.object_type
+
+    if config_path.name == "config.yaml":
+        # Make sure not to load the (base) Hydra config file that is also called `config.yaml`!
+        pass
     if config := _try_load_from_config_store(
         config_path, configs_dir=configs_dir, config_store=config_store
     ):
@@ -818,11 +864,23 @@ def load_config(
         search_path = _create_config_search_path(str(configs_dir))
         logger.debug(f"Search path for a config dir: {search_path}")
 
+    config_loader = ConfigLoaderImpl(config_search_path=search_path)
+    from hydra._internal.core_plugins.structured_config_source import (
+        StructuredConfigSource,  # noqa
+    )
+
+    logger.debug(f"loading config {config_path}")
+
+    # assert isinstance(
+    #     schema_source := config_loader.repository.get_schema_source(),
+    #     StructuredConfigSource,
+    # )
+    # assert False, schema_source.load_config(str(config_path))
+
     if _has_package_global_line(config_path):
         # Tricky: Here we load the global config but with the given config as an override.
-        config_loader = ConfigLoaderImpl(config_search_path=search_path)
         top_config = config_loader.load_configuration(
-            "config",  # todo: Fix this?
+            "config",  # todo: Fix this!!
             overrides=[f"{config_group}={config_name}"],
             # todo: setting this here because it appears to be what's used in Hydra in a normal
             # run, even though RunMode.RUN would make more sense intuitively.
@@ -831,13 +889,17 @@ def load_config(
         return top_config
 
     # Load the global config and get the node for the desired config.
-    # TODO: Can this cause errors if configs in an unrelated subtree have required values?
-    logger.debug(f"loading config {config_path}")
-    config_loader = ConfigLoaderImpl(config_search_path=search_path)
     with warnings.catch_warnings():
+        config_to_load = f"{config_group}/{config_name}"
+        # if config_path.name == "config.yaml":
+        #     # Make sure not to load the (base) Hydra config file that is also called `config.yaml`!
+        #     config_to_load = str(config_path)
         warnings.simplefilter("ignore", category=UserWarning)
         top_config = config_loader.load_configuration(
-            f"{config_group}/{config_name}", overrides=[], run_mode=RunMode.MULTIRUN
+            config_to_load,
+            overrides=[],
+            run_mode=RunMode.MULTIRUN,
+            validate_sweep_overrides=False,
         )
     # Retrieve the sub-entry in the config and return it.
     config = top_config

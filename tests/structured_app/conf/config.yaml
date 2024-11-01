@@ -1,8 +1,7 @@
 # yaml-language-server: $schema=../schemas/conf_config_schema.json
 defaults:
   - base_config
-  - db: mysql
+  - db: postgresql
   # See composition order note
   - _self_
-
 debug: true

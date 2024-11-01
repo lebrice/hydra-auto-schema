@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=nested.json
 a:
   b:
     foo:

@@ -46,8 +46,7 @@
     "_target_": {
       "type": "string",
       "title": "Target",
-      "description": "Target to instantiate.\nSee https://hydra.cc/docs/advanced/instantiate_objects/overview/",
-      "const": "tests.configs.FooConfig"
+      "description": "Target to instantiate.\nSee https://hydra.cc/docs/advanced/instantiate_objects/overview/"
     },
     "_convert_": {
       "type": "string",
@@ -69,11 +68,6 @@
       "type": "boolean",
       "title": "Recursive",
       "description": "Whether instantiating this config should recursively instantiate children configs.\nSee: https://hydra.cc/docs/advanced/instantiate_objects/overview/#recursive-instantiation"
-    },
-    "bar": {
-      "title": "Bar",
-      "type": "string",
-      "description": "The bar parameter of the FooConfig."
     }
   },
   "dependentRequired": {
@@ -90,9 +84,5 @@
       "_target_"
     ]
   },
-  "required": [
-    "bar"
-  ],
-  "type": "object",
-  "additionalProperties": false
+  "additionalProperties": true
 }

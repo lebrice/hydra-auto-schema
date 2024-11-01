@@ -5,6 +5,7 @@ import warnings
 from pathlib import Path
 
 import rich
+from hydra.core.config_store import ConfigStore
 from watchdog.events import (
     DirCreatedEvent,
     DirDeletedEvent,
@@ -65,7 +66,6 @@ class AutoSchemaEventHandler(PatternMatchingEventHandler):
         self.add_headers = add_headers
 
         self._last_updated: dict[Path, datetime.datetime] = {}
-
         # On startup, we could make a schema for every config file, right?
         add_schemas_to_all_hydra_configs(
             repo_root=repo_root,
@@ -75,7 +75,7 @@ class AutoSchemaEventHandler(PatternMatchingEventHandler):
             stop_on_error=stop_on_error,
             quiet=quiet,
             add_headers=add_headers,
-            config_store=None,  # todo: could also try ConfigStore.instance()?
+            config_store=ConfigStore.instance(),  # todo: could also try ConfigStore.instance()?
         )
         self.console = rich.console.Console()
         self.console.log(

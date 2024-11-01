@@ -46,8 +46,7 @@
     "_target_": {
       "type": "string",
       "title": "Target",
-      "description": "Target to instantiate.\nSee https://hydra.cc/docs/advanced/instantiate_objects/overview/",
-      "const": "__main__.Config"
+      "description": "Target to instantiate.\nSee https://hydra.cc/docs/advanced/instantiate_objects/overview/"
     },
     "_convert_": {
       "type": "string",
@@ -69,17 +68,6 @@
       "type": "boolean",
       "title": "Recursive",
       "description": "Whether instantiating this config should recursively instantiate children configs.\nSee: https://hydra.cc/docs/advanced/instantiate_objects/overview/#recursive-instantiation"
-    },
-    "db": {
-      "$ref": "#/$defs/DBConfig",
-      "default": "???",
-      "description": "The db parameter of the Config."
-    },
-    "debug": {
-      "default": false,
-      "title": "Debug",
-      "type": "boolean",
-      "description": "The debug parameter of the Config."
     },
     "hydra": {
       "type": "object",
@@ -187,29 +175,5 @@
       "_target_"
     ]
   },
-  "additionalProperties": false,
-  "$defs": {
-    "DBConfig": {
-      "properties": {
-        "driver": {
-          "default": "???",
-          "title": "Driver",
-          "type": "string"
-        },
-        "host": {
-          "default": "localhost",
-          "title": "Host",
-          "type": "string"
-        },
-        "port": {
-          "default": "???",
-          "title": "Port",
-          "type": "integer"
-        }
-      },
-      "title": "DBConfig",
-      "type": "object"
-    }
-  },
-  "type": "object"
+  "additionalProperties": true
 }
