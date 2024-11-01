@@ -23,8 +23,8 @@ def new_repo_root(tmp_path: Path):
 
 @pytest.fixture
 def new_schemas_dir(new_repo_root: Path):
-    shutil.rmtree(new_repo_root / "schemas", ignore_errors=True)
-    return new_repo_root / "schemas"
+    shutil.rmtree(schemas_dir := new_repo_root / "schemas", ignore_errors=True)
+    return schemas_dir
 
 
 @pytest.fixture()
@@ -64,14 +64,9 @@ def structured_app_result(
     result = subprocess.run(
         ["python", "app.py", *shlex.split(command_line_arguments)],
         capture_output=True,
-        # stdout=subprocess.PIPE,
-        # stderr=subprocess.PIPE,
         text=True,
     )
     assert result.returncode == 1
-
-    # schemas_dir = new_repo_root / ".schemas"
-    # assert schemas_dir.exists()
     print(result.stdout)
     print(result.stderr)
     return result
@@ -80,7 +75,7 @@ def structured_app_result(
 @pytest.mark.parametrize(
     command_line_arguments.__name__, ["db.port=fail"], indirect=True
 )
-def test_get_same_output_as_in_example(
+def test_run_example(
     structured_app_result: subprocess.CompletedProcess,
     new_repo_root: Path,
     new_schemas_dir: Path,
@@ -94,7 +89,7 @@ def test_get_same_output_as_in_example(
     assert "full_key: db.port" in structured_app_result.stderr
     assert "reference_type=DBConfig" in structured_app_result.stderr
     assert "object_type=MySQLConfig" in structured_app_result.stderr
-    # TODO:
+    # The schemas should have been generated.
     schemas_dir = new_schemas_dir
     assert schemas_dir.exists()
     files = list(schemas_dir.glob("*.json"))
