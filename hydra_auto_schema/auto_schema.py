@@ -301,7 +301,9 @@ def _read_json(file: Path) -> dict:
     # Remove any trailing commas from the content:
     file_contents = (
         # Remove any trailing "," that would make it invalid JSON.
-        "".join(file_contents.split()).replace(",}", "}").replace(",]", "]")
+        "".join(file_contents.split())
+        .replace(",}", "}")
+        .replace(",]", "]")
     )
     return json.loads(file_contents)
 
@@ -493,57 +495,28 @@ def _update_schema_from_defaults(
     config_store: ConfigStore | None,
 ):
     defaults_list = defaults
+    config_store = config_store or ConfigStore.instance()
 
     for default in defaults_list:
         if default == "_self_":  # todo: does this actually make sense?
             continue
         # Note: The defaults can also have the .yaml or .yml extension, _load_config drops the
         # extension.
-        if isinstance(default, str):
-            assert not default.startswith("/")
-            other_config_path = config_file.parent / default
-        else:
-            assert len(default) == 1
-            key, val = next(iter(default.items()))
-            # Probably wrong!
-            other_config_path = config_file.parent / key / val
-        logger.debug(f"Loading config of default {default}.")
+        default_config, default_config_file = load_default_config(
+            config_file=config_file,
+            configs_dir=configs_dir,
+            default=default,
+            repo_root=repo_root,
+        )
 
-        if not other_config_path.suffix:
-            # If the other config file has the name without the extension, try both .yml and .yaml.
-            for suffix in (".yml", ".yaml"):
-                if other_config_path.with_suffix(suffix).exists():
-                    other_config_path = other_config_path.with_suffix(suffix)
-                    break
-
-        # We don't have the configstore, and the other config doesn't exist!
-        if (
-            config_store is None
-            and not other_config_path.exists()
-            and (
-                _config := _try_load_from_config_store(
-                    other_config_path,
-                    config_store=(_config_store := ConfigStore.instance()),
-                    configs_dir=configs_dir,
-                )
-            )
-        ):
-            default_config = _config
-            config_store = _config_store
-        else:
-            default_config = load_config(
-                other_config_path,
-                configs_dir=configs_dir,
-                repo_root=repo_root,
-                config_store=config_store,
-            )
-
-        if config_store and "_target_" not in default_config:
+        if "_target_" not in default_config:
             # (object_type := default_config._metadata.object_type) is not DictConfig
             object_type = default_config._metadata.object_type
             # logger.debug(
             #     f"Setting target based on the structured config type: {object_type}"
             # )
+            # TODO: Need to check what the default is for object_type when `default_config` is not
+            # a structured config.
             with omegaconf.open_dict(default_config):
                 default_config["_target_"] = (
                     object_type.__module__ + "." + object_type.__qualname__
@@ -551,7 +524,7 @@ def _update_schema_from_defaults(
 
         schema_of_default = _create_schema_for_config(
             config=default_config,
-            config_file=other_config_path,
+            config_file=default_config_file,
             configs_dir=configs_dir,
             repo_root=repo_root,
             config_store=config_store,
@@ -578,6 +551,46 @@ def _update_schema_from_defaults(
         if schema.get("additionalProperties") is False:
             schema.pop("additionalProperties")
     return schema
+
+
+def load_default_config(
+    config_file: Path,
+    configs_dir: Path,
+    default: str | dict[str, str],
+    repo_root: Path,
+) -> tuple[DictConfig, Path]:
+    """Loads the config pointed to by the given "defaults" entry in this config file."""
+    assert "@" not in default  # TODO!
+
+    if isinstance(default, str):
+        assert not default.startswith("/")  # TODO!
+        other_config_path = config_file.parent / default
+    else:
+        assert len(default) == 1
+        key, val = next(iter(default.items()))
+        key = key.removeprefix("override ")
+        if key.startswith("/"):
+            other_config_path = configs_dir / key / val
+        else:
+            other_config_path = config_file.parent / key / val
+    logger.debug(f"Loading config of default {default}.")
+
+    if not other_config_path.suffix:
+        # If the other config file has the name without the extension, try both .yml and .yaml.
+        for suffix in (".yml", ".yaml"):
+            if other_config_path.with_suffix(suffix).exists():
+                other_config_path = other_config_path.with_suffix(suffix)
+                break
+
+    return (
+        load_config(
+            other_config_path,
+            configs_dir=configs_dir,
+            repo_root=repo_root,
+            config_store=ConfigStore.instance(),
+        ),
+        other_config_path,
+    )
 
 
 def _overwrite(val_a: Any, val_b: Any) -> Any:
@@ -918,9 +931,9 @@ def _get_schema_from_target(config: dict | DictConfig) -> ObjectSchema | Schema:
         if description := param_descriptions.get(property_name):
             property_dict["description"] = description
         else:
-            property_dict[
-                "description"
-            ] = f"The {property_name} parameter of the {target.__qualname__}."
+            property_dict["description"] = (
+                f"The {property_name} parameter of the {target.__qualname__}."
+            )
 
     if config.get("_partial_"):
         json_schema["required"] = []

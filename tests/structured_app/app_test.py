@@ -107,3 +107,28 @@ def test_run_example(
             extension=".json",
             fullpath=structured_app_dir / "schemas" / file.name,
         )
+
+
+@pytest.mark.xfail(reason="TODO: implement the test.", strict=True)
+@pytest.mark.parametrize(
+    command_line_arguments.__name__, ["--config-name=with_overrides"], indirect=True
+)
+def test_run_example_with_config_name(
+    structured_app_result: subprocess.CompletedProcess,
+    new_repo_root: Path,
+    new_schemas_dir: Path,
+    file_regression: FileRegressionFixture,
+):
+    assert structured_app_result.returncode == 1
+    assert False, structured_app_result.stdout
+    # The schemas should have been generated.
+    schemas_dir = new_schemas_dir
+    assert schemas_dir.exists()
+    files = list(schemas_dir.glob("*.json"))
+    assert files
+    for file in files:
+        file_regression.check(
+            (schemas_dir / file.name).read_text().rstrip(),
+            extension=".json",
+            fullpath=structured_app_dir / "schemas" / file.name,
+        )
