@@ -32,6 +32,7 @@ dev-dependencies = [
     "pytest-regressions>=2.5.0",
     "uv-dynamic-versioning>=0.2.0",
     "pytest-cov>=5.0.0",
+    "pre-commit<4.0.0",
 ]
 managed = true
 

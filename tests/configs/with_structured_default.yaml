@@ -1,0 +1,4 @@
+# yaml-language-server: $schema=with_structured_default.json
+defaults:
+  - base_foo
+bar: "overwritten value"
