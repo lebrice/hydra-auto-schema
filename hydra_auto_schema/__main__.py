@@ -1,5 +1,4 @@
 import argparse
-import importlib
 import logging
 import os
 import sys
@@ -111,18 +110,17 @@ def main(argv: list[str] | None = None):
         repo_root = Path(".")
         configs_dir = configs_dir.relative_to(os.getcwd())
         sys.path.append(".")  # UGLY HACK!
-        package = repo_root.name.replace("-", "_")
-        for module in repo_root.glob("*.py"):
-            module_name = module.stem
-
-            if (
-                "import hydra" in (module_text := module.read_text())
-                or "from hydra" in module_text
-            ):
-                logger.info(
-                    f"Importing module {module_name} from {package} to populate Hydra's ConfigStore."
-                )
-                importlib.import_module(module_name, package=package)
+        # package = repo_root.name.replace("-", "_")
+        # for module in repo_root.glob("*.py"):
+        #     module_name = module.stem
+        #     if (
+        #         "import hydra" in (module_text := module.read_text())
+        #         or "from hydra" in module_text or "ConfigStore" in module_text
+        #     ):
+        #         logger.info(
+        #             f"Importing module {module_name} from {package} to populate Hydra's ConfigStore."
+        #         )
+        #         importlib.import_module(module_name, package=package)
         config_store = ConfigStore.instance()
     except ModuleNotFoundError:
         config_store = None
