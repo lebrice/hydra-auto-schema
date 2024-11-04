@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=../../../../.schemas/db_postgresql_schema.json
 defaults:
   - base_postgresql
 user: postgres_user

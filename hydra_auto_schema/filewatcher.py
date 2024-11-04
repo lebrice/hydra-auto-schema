@@ -5,6 +5,7 @@ import warnings
 from pathlib import Path
 
 import rich
+from hydra.core.config_store import ConfigStore
 from watchdog.events import (
     DirCreatedEvent,
     DirDeletedEvent,
@@ -22,10 +23,10 @@ from hydra_auto_schema.auto_schema import (
     _add_schemas_to_vscode_settings,
     _create_schema_for_config,
     _install_yaml_vscode_extension,
-    _load_config,
     _read_json,
     add_schemas_to_all_hydra_configs,
     get_schema_file_path,
+    load_config,
     logger,
 )
 
@@ -44,6 +45,7 @@ class AutoSchemaEventHandler(PatternMatchingEventHandler):
         stop_on_error: bool,
         quiet: bool,
         add_headers: bool | None,
+        config_store: ConfigStore | None = None,
     ):
         self.configs_dir = configs_dir
         super().__init__(
@@ -65,7 +67,6 @@ class AutoSchemaEventHandler(PatternMatchingEventHandler):
         self.add_headers = add_headers
 
         self._last_updated: dict[Path, datetime.datetime] = {}
-
         # On startup, we could make a schema for every config file, right?
         add_schemas_to_all_hydra_configs(
             repo_root=repo_root,
@@ -75,6 +76,7 @@ class AutoSchemaEventHandler(PatternMatchingEventHandler):
             stop_on_error=stop_on_error,
             quiet=quiet,
             add_headers=add_headers,
+            config_store=config_store or ConfigStore.instance(),
         )
         self.console = rich.console.Console()
         self.console.log(
@@ -168,16 +170,24 @@ class AutoSchemaEventHandler(PatternMatchingEventHandler):
         schema_file = get_schema_file_path(config_file, self.schemas_dir)
 
         logger.debug(f"Creating a schema for {pretty_config_file_name}")
+        from hydra.core.config_store import ConfigStore
+
+        config_store = ConfigStore.instance()
+
         with warnings.catch_warnings():
             warnings.filterwarnings("ignore", category=UserWarning)
-            config = _load_config(
-                config_file, configs_dir=self.configs_dir, repo_root=self.repo_root
+            config = load_config(
+                config_file,
+                configs_dir=self.configs_dir,
+                repo_root=self.repo_root,
+                config_store=config_store,
             )
         schema = _create_schema_for_config(
             config,
             config_file=config_file,
             configs_dir=self.configs_dir,
             repo_root=self.repo_root,
+            config_store=config_store,
         )
         schema_file.parent.mkdir(exist_ok=True, parents=True)
         schema_file.write_text(json.dumps(schema, indent=2).rstrip() + "\n\n")

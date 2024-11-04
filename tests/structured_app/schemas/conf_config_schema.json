@@ -1,0 +1,612 @@
+{
+  "title": "Config",
+  "description": "Based on the signature of <class '__main__.Config'>.\n",
+  "properties": {
+    "defaults": {
+      "title": "Hydra defaults",
+      "description": "Hydra defaults for this config. See https://hydra.cc/docs/advanced/defaults_list/",
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "propertyNames": {
+              "pattern": "^(override\\s*)?(/?\\w*)+$"
+            },
+            "patternProperties": {
+              "^(override\\s*)?(/?\\w*)*$": {
+                "type": "string",
+                "pattern": "\\w*(.yaml|.yml)?$"
+              }
+            },
+            "minProperties": 1,
+            "maxProperties": 1
+          },
+          {
+            "type": "string",
+            "pattern": "^\\w+(.yaml|.yml)?$"
+          },
+          {
+            "type": "object",
+            "propertyNames": {
+              "pattern": "^(override\\s*)?(/?\\w*)+$"
+            },
+            "patternProperties": {
+              "^(override\\s*)?(/?\\w*)*$": {
+                "type": "null"
+              }
+            },
+            "minProperties": 1,
+            "maxProperties": 1
+          }
+        ]
+      },
+      "uniqueItems": true
+    },
+    "_target_": {
+      "type": "string",
+      "title": "Target",
+      "description": "Target to instantiate, in this case: `<class '__main__.Config'>`\nSee the Hydra docs for '_target_': https://hydra.cc/docs/advanced/instantiate_objects/overview/\n",
+      "const": "__main__.Config"
+    },
+    "_convert_": {
+      "type": "string",
+      "enum": [
+        "none",
+        "partial",
+        "object",
+        "all"
+      ],
+      "title": "Convert",
+      "description": "See https://hydra.cc/docs/advanced/instantiate_objects/overview/#parameter-conversion-strategies"
+    },
+    "_partial_": {
+      "type": "boolean",
+      "title": "Partial",
+      "description": "Whether this config calls the target function when instantiated, or creates a `functools.partial` that will call the target.\nSee: https://hydra.cc/docs/advanced/instantiate_objects/overview"
+    },
+    "_recursive_": {
+      "type": "boolean",
+      "title": "Recursive",
+      "description": "Whether instantiating this config should recursively instantiate children configs.\nSee: https://hydra.cc/docs/advanced/instantiate_objects/overview/#recursive-instantiation"
+    },
+    "db": {
+      "$ref": "#/$defs/DBConfig",
+      "default": "???",
+      "description": "Based on the signature of <class '__main__.MySQLConfig'>.\n",
+      "properties": {
+        "driver": {
+          "default": "mysql",
+          "title": "Driver",
+          "type": "string",
+          "description": "The driver parameter of the MySQLConfig."
+        },
+        "host": {
+          "default": "localhost",
+          "title": "Host",
+          "type": "string",
+          "description": "The host parameter of the MySQLConfig."
+        },
+        "port": {
+          "default": 3306,
+          "title": "Port",
+          "type": "integer",
+          "description": "The port parameter of the MySQLConfig."
+        },
+        "user": {
+          "default": "???",
+          "title": "User",
+          "type": "string",
+          "description": "The user parameter of the MySQLConfig."
+        },
+        "password": {
+          "default": "???",
+          "title": "Password",
+          "type": "string",
+          "description": "The password parameter of the MySQLConfig."
+        },
+        "_target_": {
+          "type": "string",
+          "title": "Target",
+          "const": "__main__.MySQLConfig",
+          "description": "Target to instantiate, in this case: `<class '__main__.MySQLConfig'>`\nSee the Hydra docs for '_target_': https://hydra.cc/docs/advanced/instantiate_objects/overview/\n"
+        }
+      },
+      "title": "MySQLConfig",
+      "type": "object",
+      "additionalProperties": false
+    },
+    "debug": {
+      "default": false,
+      "title": "Debug",
+      "type": "boolean",
+      "description": "The debug parameter of the Config."
+    },
+    "hydra": {
+      "properties": {
+        "defaults": {
+          "items": {},
+          "title": "Defaults",
+          "type": "array",
+          "description": "The defaults parameter of the HydraConf."
+        },
+        "mode": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RunMode"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The mode parameter of the HydraConf."
+        },
+        "searchpath": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Searchpath",
+          "type": "array",
+          "description": "The searchpath parameter of the HydraConf."
+        },
+        "run": {
+          "$ref": "#/$defs/RunDir",
+          "description": "The run parameter of the HydraConf."
+        },
+        "sweep": {
+          "$ref": "#/$defs/SweepDir",
+          "description": "The sweep parameter of the HydraConf."
+        },
+        "hydra_logging": {
+          "default": "???",
+          "title": "Hydra Logging",
+          "type": "object",
+          "description": "The hydra_logging parameter of the HydraConf."
+        },
+        "job_logging": {
+          "default": "???",
+          "title": "Job Logging",
+          "type": "object",
+          "description": "The job_logging parameter of the HydraConf."
+        },
+        "sweeper": {
+          "default": "???",
+          "title": "BasicSweeper",
+          "description": "Based on the signature of <class 'hydra._internal.core_plugins.basic_sweeper.BasicSweeper'>.\n",
+          "properties": {
+            "_target_": {
+              "default": "hydra._internal.core_plugins.basic_sweeper.BasicSweeper",
+              "title": "Target",
+              "type": "string",
+              "description": "Target to instantiate, in this case: `<class 'hydra._internal.core_plugins.basic_sweeper.BasicSweeper'>`\nSee the Hydra docs for '_target_': https://hydra.cc/docs/advanced/instantiate_objects/overview/\n",
+              "const": "hydra._internal.core_plugins.basic_sweeper.BasicSweeper"
+            },
+            "_recursive_": {
+              "default": false,
+              "title": " Recursive ",
+              "type": "boolean",
+              "description": "The _recursive_ parameter of the BasicSweeper."
+            },
+            "_convert_": {
+              "default": "all",
+              "title": " Convert ",
+              "type": "string",
+              "description": "The _convert_ parameter of the BasicSweeper."
+            },
+            "max_batch_size": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Max Batch Size",
+              "description": "The max_batch_size parameter of the BasicSweeper."
+            },
+            "params": {
+              "anyOf": [
+                {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Params",
+              "description": "The params parameter of the BasicSweeper."
+            }
+          },
+          "required": [
+            "max_batch_size"
+          ],
+          "type": "object",
+          "additionalProperties": false
+        },
+        "launcher": {
+          "default": "???",
+          "title": "BasicLauncher",
+          "description": "Based on the signature of <class 'hydra._internal.core_plugins.basic_launcher.BasicLauncher'>.\n",
+          "properties": {
+            "_target_": {
+              "default": "hydra._internal.core_plugins.basic_launcher.BasicLauncher",
+              "title": "Target",
+              "type": "string",
+              "description": "Target to instantiate, in this case: `<class 'hydra._internal.core_plugins.basic_launcher.BasicLauncher'>`\nSee the Hydra docs for '_target_': https://hydra.cc/docs/advanced/instantiate_objects/overview/\n",
+              "const": "hydra._internal.core_plugins.basic_launcher.BasicLauncher"
+            },
+            "_recursive_": {
+              "default": false,
+              "title": " Recursive ",
+              "type": "boolean",
+              "description": "The _recursive_ parameter of the BasicLauncher."
+            },
+            "_convert_": {
+              "default": "all",
+              "title": " Convert ",
+              "type": "string",
+              "description": "The _convert_ parameter of the BasicLauncher."
+            }
+          },
+          "type": "object",
+          "additionalProperties": false
+        },
+        "callbacks": {
+          "title": "Callbacks",
+          "type": "object",
+          "description": "The callbacks parameter of the HydraConf."
+        },
+        "help": {
+          "$ref": "#/$defs/HelpConf",
+          "description": "The help parameter of the HydraConf."
+        },
+        "hydra_help": {
+          "$ref": "#/$defs/HydraHelpConf",
+          "description": "The hydra_help parameter of the HydraConf."
+        },
+        "output_subdir": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": ".hydra",
+          "title": "Output Subdir",
+          "description": "The output_subdir parameter of the HydraConf."
+        },
+        "overrides": {
+          "$ref": "#/$defs/OverridesConf",
+          "description": "The overrides parameter of the HydraConf."
+        },
+        "job": {
+          "$ref": "#/$defs/JobConf",
+          "description": "The job parameter of the HydraConf."
+        },
+        "runtime": {
+          "$ref": "#/$defs/RuntimeConf",
+          "description": "The runtime parameter of the HydraConf."
+        },
+        "verbose": {
+          "default": false,
+          "title": "Verbose",
+          "description": "The verbose parameter of the HydraConf."
+        },
+        "_target_": {
+          "type": "string",
+          "title": "Target",
+          "const": "hydra.conf.HydraConf",
+          "description": "Target to instantiate, in this case: `<class 'hydra.conf.HydraConf'>`\nSee the Hydra docs for '_target_': https://hydra.cc/docs/advanced/instantiate_objects/overview/\n"
+        }
+      },
+      "title": "HydraConf",
+      "type": "object",
+      "description": "Based on the signature of <class 'hydra.conf.HydraConf'>.\n",
+      "additionalProperties": true
+    }
+  },
+  "dependentRequired": {
+    "_convert_": [
+      "_target_"
+    ],
+    "_partial_": [
+      "_target_"
+    ],
+    "_args_": [
+      "_target_"
+    ],
+    "_recursive_": [
+      "_target_"
+    ]
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "DBConfig": {
+      "properties": {
+        "driver": {
+          "default": "???",
+          "title": "Driver",
+          "type": "string"
+        },
+        "host": {
+          "default": "localhost",
+          "title": "Host",
+          "type": "string"
+        },
+        "port": {
+          "default": "???",
+          "title": "Port",
+          "type": "integer"
+        }
+      },
+      "title": "DBConfig",
+      "type": "object"
+    },
+    "ConfigSourceInfo": {
+      "properties": {
+        "path": {
+          "title": "Path",
+          "type": "string"
+        },
+        "schema": {
+          "title": "Schema",
+          "type": "string"
+        },
+        "provider": {
+          "title": "Provider",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "schema",
+        "provider"
+      ],
+      "title": "ConfigSourceInfo",
+      "type": "object"
+    },
+    "HelpConf": {
+      "properties": {
+        "app_name": {
+          "default": "???",
+          "title": "App Name",
+          "type": "string"
+        },
+        "header": {
+          "default": "???",
+          "title": "Header",
+          "type": "string"
+        },
+        "footer": {
+          "default": "???",
+          "title": "Footer",
+          "type": "string"
+        },
+        "template": {
+          "default": "???",
+          "title": "Template",
+          "type": "string"
+        }
+      },
+      "title": "HelpConf",
+      "type": "object"
+    },
+    "HydraHelpConf": {
+      "properties": {
+        "hydra_help": {
+          "default": "???",
+          "title": "Hydra Help",
+          "type": "string"
+        },
+        "template": {
+          "default": "???",
+          "title": "Template",
+          "type": "string"
+        }
+      },
+      "title": "HydraHelpConf",
+      "type": "object"
+    },
+    "JobConf": {
+      "properties": {
+        "name": {
+          "default": "???",
+          "title": "Name",
+          "type": "string"
+        },
+        "chdir": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Chdir"
+        },
+        "override_dirname": {
+          "default": "???",
+          "title": "Override Dirname",
+          "type": "string"
+        },
+        "id": {
+          "default": "???",
+          "title": "Id",
+          "type": "string"
+        },
+        "num": {
+          "default": "???",
+          "title": "Num",
+          "type": "integer"
+        },
+        "config_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": "???",
+          "title": "Config Name"
+        },
+        "env_set": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Env Set",
+          "type": "object"
+        },
+        "env_copy": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Env Copy",
+          "type": "array"
+        },
+        "config": {
+          "$ref": "#/$defs/JobConfig"
+        }
+      },
+      "title": "JobConf",
+      "type": "object"
+    },
+    "JobConfig": {
+      "properties": {
+        "override_dirname": {
+          "$ref": "#/$defs/OverrideDirname"
+        }
+      },
+      "title": "JobConfig",
+      "type": "object"
+    },
+    "OverrideDirname": {
+      "properties": {
+        "kv_sep": {
+          "default": "=",
+          "title": "Kv Sep",
+          "type": "string"
+        },
+        "item_sep": {
+          "default": ",",
+          "title": "Item Sep",
+          "type": "string"
+        },
+        "exclude_keys": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Exclude Keys",
+          "type": "array"
+        }
+      },
+      "title": "OverrideDirname",
+      "type": "object"
+    },
+    "OverridesConf": {
+      "properties": {
+        "hydra": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Hydra",
+          "type": "array"
+        },
+        "task": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Task",
+          "type": "array"
+        }
+      },
+      "title": "OverridesConf",
+      "type": "object"
+    },
+    "RunDir": {
+      "properties": {
+        "dir": {
+          "default": "???",
+          "title": "Dir",
+          "type": "string"
+        }
+      },
+      "title": "RunDir",
+      "type": "object"
+    },
+    "RunMode": {
+      "enum": [
+        1,
+        2
+      ],
+      "title": "RunMode",
+      "type": "integer"
+    },
+    "RuntimeConf": {
+      "properties": {
+        "version": {
+          "default": "???",
+          "title": "Version",
+          "type": "string"
+        },
+        "version_base": {
+          "default": "???",
+          "title": "Version Base",
+          "type": "string"
+        },
+        "cwd": {
+          "default": "???",
+          "title": "Cwd",
+          "type": "string"
+        },
+        "config_sources": {
+          "default": "???",
+          "items": {
+            "$ref": "#/$defs/ConfigSourceInfo"
+          },
+          "title": "Config Sources",
+          "type": "array"
+        },
+        "output_dir": {
+          "default": "???",
+          "title": "Output Dir",
+          "type": "string"
+        },
+        "choices": {
+          "title": "Choices",
+          "type": "object"
+        }
+      },
+      "title": "RuntimeConf",
+      "type": "object"
+    },
+    "SweepDir": {
+      "properties": {
+        "dir": {
+          "default": "???",
+          "title": "Dir",
+          "type": "string"
+        },
+        "subdir": {
+          "default": "???",
+          "title": "Subdir",
+          "type": "string"
+        }
+      },
+      "title": "SweepDir",
+      "type": "object"
+    }
+  },
+  "type": "object"
+}

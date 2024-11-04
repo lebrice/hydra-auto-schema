@@ -1,13 +1,15 @@
-from hydra_auto_schema.auto_schema import add_schemas_to_all_hydra_configs, logger
-from hydra_auto_schema.filewatcher import AutoSchemaEventHandler
-
 import argparse
 import logging
+import os
 import sys
 import time
 from pathlib import Path
+
 import rich.logging
 from watchdog.observers import Observer
+
+from hydra_auto_schema.auto_schema import add_schemas_to_all_hydra_configs, logger
+from hydra_auto_schema.filewatcher import AutoSchemaEventHandler
 
 
 def main(argv: list[str] | None = None):
@@ -28,8 +30,9 @@ def main(argv: list[str] | None = None):
     )
 
     parser = argparse.ArgumentParser()
+    parser.add_argument("repo_root", nargs="?", type=Path, default=Path.cwd())
     parser.add_argument(
-        "configs_dir",
+        "--configs_dir",
         type=Path,
         nargs="?",
         default=None,
@@ -39,7 +42,6 @@ def main(argv: list[str] | None = None):
         ),
     )
     parser.add_argument("--schemas-dir", type=Path, default=Path.cwd() / ".schemas")
-    parser.add_argument("--repo-root", type=Path, default=Path.cwd())
     parser.add_argument("--regen-schemas", action=argparse.BooleanOptionalAction)
     parser.add_argument("--stop-on-error", action=argparse.BooleanOptionalAction)
     parser.add_argument("--watch", action=argparse.BooleanOptionalAction)
@@ -73,9 +75,16 @@ def main(argv: list[str] | None = None):
     add_headers: bool = args.add_headers
     watch: bool = args.watch
 
+    repo_root = repo_root.resolve()
+
     if configs_dir is None:
         configs_dir = next(
-            (p for p in repo_root.rglob("configs") if ".venv" not in p.parts), None
+            (
+                p
+                for p in repo_root.rglob("conf*")
+                if p.is_dir() and ".venv" not in p.parts
+            ),
+            None,
         )
 
     if configs_dir is None:
@@ -85,6 +94,47 @@ def main(argv: list[str] | None = None):
         )
     if not configs_dir.is_absolute():
         configs_dir = repo_root / configs_dir
+
+    configs_dir = configs_dir.resolve()
+
+    from hydra.core.config_store import ConfigStore
+    from hydra.core.singleton import Singleton
+
+    # assert False, (repo_root, configs_dir)
+    _dir_before = os.getcwd()
+    _sys_path_before = sys.path.copy()
+    _singleton_state_before = Singleton.get_state()
+
+    try:
+        os.chdir(repo_root)
+        repo_root = Path(".")
+        sys.path.append(".")  # UGLY HACK!
+
+        # Idea (might not be necessary): import all hydra-related modules in the repo root to
+        # populate the ConfigStore.
+        # package = repo_root.name.replace("-", "_")
+        # for module in repo_root.glob("*.py"):
+        #     module_name = module.stem
+        #     if (
+        #         "import hydra" in (module_text := module.read_text())
+        #         or "from hydra" in module_text or "ConfigStore" in module_text
+        #     ):
+        #         logger.info(
+        #             f"Importing module {module_name} from {package} to populate Hydra's ConfigStore."
+        #         )
+        #         importlib.import_module(module_name, package=package)
+        config_store = ConfigStore.instance()
+        # FIXME: It seems like changing this value is necessary? (otherwise we get an error later.)
+        configs_dir = configs_dir.relative_to(os.getcwd())
+
+    except ModuleNotFoundError:
+        config_store = None
+    finally:
+        sys.path = _sys_path_before
+        Singleton.set_state(_singleton_state_before)
+        os.chdir(_dir_before)
+
+    # try to find a ConfigStore?
 
     if quiet:
         logger.setLevel(logging.NOTSET)
@@ -98,6 +148,9 @@ def main(argv: list[str] | None = None):
             logger.setLevel(logging.WARNING)
     else:
         logger.setLevel(logging.ERROR)
+    logger.debug(
+        f"{configs_dir=} {schemas_dir=} {repo_root=} {regen_schemas=} {stop_on_error=} {quiet=} {verbose=} {add_headers=} {watch=}"
+    )
 
     if watch:
         observer = Observer()
@@ -109,6 +162,7 @@ def main(argv: list[str] | None = None):
             stop_on_error=stop_on_error,
             quiet=quiet,
             add_headers=add_headers,
+            config_store=config_store,
         )
         observer.schedule(handler, str(configs_dir), recursive=True)
         observer.start()
@@ -129,6 +183,7 @@ def main(argv: list[str] | None = None):
         stop_on_error=stop_on_error,
         quiet=quiet,
         add_headers=add_headers,
+        config_store=config_store,
     )
     logger.info("Done updating the schemas for the Hydra config files.")
 
