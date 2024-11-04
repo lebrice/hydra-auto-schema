@@ -801,8 +801,6 @@ def load_config(
         if target is dict:
             assert entry.name == "_dummy_empty_config_.yaml"
             return
-        # if entry.provider == "hydra":
-        #     return
 
         logger.debug(f"Setting target for structured config node {entry} to {target}")
         with omegaconf.open_dict(entry.node):
