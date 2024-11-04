@@ -108,8 +108,10 @@ def main(argv: list[str] | None = None):
     try:
         os.chdir(repo_root)
         repo_root = Path(".")
-        configs_dir = configs_dir.relative_to(os.getcwd())
         sys.path.append(".")  # UGLY HACK!
+
+        # Idea (might not be necessary): import all hydra-related modules in the repo root to
+        # populate the ConfigStore.
         # package = repo_root.name.replace("-", "_")
         # for module in repo_root.glob("*.py"):
         #     module_name = module.stem
@@ -122,6 +124,9 @@ def main(argv: list[str] | None = None):
         #         )
         #         importlib.import_module(module_name, package=package)
         config_store = ConfigStore.instance()
+        # FIXME: It seems like changing this value is necessary? (otherwise we get an error later.)
+        configs_dir = configs_dir.relative_to(os.getcwd())
+
     except ModuleNotFoundError:
         config_store = None
     finally:
