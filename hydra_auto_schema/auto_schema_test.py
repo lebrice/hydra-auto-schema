@@ -69,6 +69,8 @@ def test_make_schema(config_file: Path, file_regression: FileRegressionFixture):
     schema_file = config_file.with_suffix(".json")
 
     config = yaml.load(config_file.read_text(), yaml.FullLoader)
+    if config is None:
+        config = {}
     schema = _create_schema_for_config(
         config=config,
         config_file=config_file,

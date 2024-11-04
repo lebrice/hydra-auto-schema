@@ -1,6 +1,6 @@
 {
-  "title": "Auto-generated schema for db/postgresql.yaml",
-  "description": "Schema created by the `auto_schema.py` script.",
+  "title": "PostGreSQLConfig",
+  "description": "Based on the signature of <class '__main__.PostGreSQLConfig'>.\n",
   "properties": {
     "defaults": {
       "title": "Hydra defaults",
@@ -46,7 +46,8 @@
     "_target_": {
       "type": "string",
       "title": "Target",
-      "description": "Target to instantiate.\nSee https://hydra.cc/docs/advanced/instantiate_objects/overview/"
+      "description": "Target to instantiate, in this case: `<class '__main__.PostGreSQLConfig'>`\nSee the Hydra docs for '_target_': https://hydra.cc/docs/advanced/instantiate_objects/overview/\n",
+      "const": "__main__.PostGreSQLConfig"
     },
     "_convert_": {
       "type": "string",
@@ -68,6 +69,42 @@
       "type": "boolean",
       "title": "Recursive",
       "description": "Whether instantiating this config should recursively instantiate children configs.\nSee: https://hydra.cc/docs/advanced/instantiate_objects/overview/#recursive-instantiation"
+    },
+    "driver": {
+      "default": "postgresql",
+      "title": "Driver",
+      "type": "string",
+      "description": "The driver parameter of the PostGreSQLConfig."
+    },
+    "host": {
+      "default": "localhost",
+      "title": "Host",
+      "type": "string",
+      "description": "The host parameter of the PostGreSQLConfig."
+    },
+    "port": {
+      "default": 5432,
+      "title": "Port",
+      "type": "integer",
+      "description": "The port parameter of the PostGreSQLConfig."
+    },
+    "user": {
+      "default": "???",
+      "title": "User",
+      "type": "string",
+      "description": "The user parameter of the PostGreSQLConfig."
+    },
+    "password": {
+      "default": "???",
+      "title": "Password",
+      "type": "string",
+      "description": "The password parameter of the PostGreSQLConfig."
+    },
+    "timeout": {
+      "default": 10,
+      "title": "Timeout",
+      "type": "integer",
+      "description": "The timeout parameter of the PostGreSQLConfig."
     }
   },
   "dependentRequired": {
@@ -84,5 +121,6 @@
       "_target_"
     ]
   },
-  "additionalProperties": true
+  "additionalProperties": false,
+  "type": "object"
 }

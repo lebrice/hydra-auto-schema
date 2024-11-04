@@ -163,9 +163,9 @@ def add_schemas_to_all_hydra_configs(
         # had a _target_ corresponding to the structured class.
         # This helps us create the schemas.
         # We later reset this to not affect the config loading in the Hydra application.
-        config_store_backup: PossiblyNestedDict[str, ConfigNode] = copy.deepcopy(
-            config_store.repo
-        )
+        from hydra.core.singleton import Singleton  # noqa
+
+        state_backup = Singleton.get_state()
 
         try:
             logger.debug(f"Creating a schema for {pretty_config_file_name}")
@@ -174,6 +174,8 @@ def add_schemas_to_all_hydra_configs(
                 warnings.filterwarnings("ignore", category=UserWarning)
                 # TODO: Can we somehow get that the ConfigStore entries should
                 # be used as targets?
+                #     Singleton._instances.pop(ConfigStore)
+                # else:
                 # Maybe using the _convert_ param of Hydra?
                 config = load_config(
                     config_file,
@@ -210,15 +212,16 @@ def add_schemas_to_all_hydra_configs(
             schema = copy.deepcopy(HYDRA_CONFIG_SCHEMA)
             schema["additionalProperties"] = True
             schema["title"] = f"Partial schema for {pretty_config_file_name}"
-            schema["description"] = (
-                f"(errors occurred while trying to create the schema from the signature:\n{exc}"
-            )
+            schema[
+                "description"
+            ] = f"(errors occurred while trying to create the schema from the signature:\n{exc}"
             schemas_dir.mkdir(exist_ok=True, parents=True)
             schema_file.write_text(json.dumps(schema, indent=2) + "\n")
             if sys.platform == "linux":
                 _set_is_incomplete_schema(schema_file, True)
         finally:
-            config_store.repo = config_store_backup
+            # Reset the config store / search path / etc to what they were before.
+            Singleton.set_state(state_backup)
 
         config_file_to_schema_file[config_file] = schema_file
 
@@ -786,57 +789,29 @@ def load_config(
     This is in large part because Hydra's internal code is *very* complicated.
     """
 
-    # from hydra._internal.core_plugins.basic_launcher import BasicLauncherConf  # noqa
-    # from hydra._internal.core_plugins.basic_sweeper import BasicSweeperConf  # noqa
-
     def _set_node_target(entry: ConfigNode | PossiblyNestedDict[str, ConfigNode]):
         if isinstance(entry, dict):
             for _key, value in entry.items():
                 _set_node_target(value)
-        else:
-            if "_target_" in entry.node:
-                return
-            target = entry.node._metadata.object_type
-            if target is dict:
-                assert entry.name == "_dummy_empty_config_.yaml"
-                return
-            if (
-                entry.name == "config.yaml"
-                and entry.package is None
-                and target is hydra.conf.HydraConf
-                and entry.group == "hydra"
-            ):
-                return
-                defaults = entry.node["defaults"]
-                with omegaconf.open_dict(entry.node):
-                    new_defaults = copy.deepcopy(defaults)
-                    for i, default in enumerate(defaults):
-                        if not (
-                            isinstance(default, dict | DictConfig) and len(default) == 1
-                        ):
-                            continue
-                        k, v = next(iter(default.items()))
-                        if k in ["launcher", "sweeper"] and not v.endswith(".yaml"):
-                            v = f"{v}.yaml"  # weird hack, seems to make it load somehow?
-                        new_defaults[i] = {k: v}
-                    logger.debug(f"New defaults: {new_defaults}")
-                    entry.node["defaults"] = new_defaults
+            return
+        if "_target_" in entry.node:
+            return
 
-            logger.debug(
-                f"Setting target for structured config node {entry} to {target}"
-            )
-            with omegaconf.open_dict(entry.node):
-                target = f"{target.__module__}.{target.__qualname__}"
-                entry.node["_target_"] = target
+        target = entry.node._metadata.object_type
+        if target is dict:
+            assert entry.name == "_dummy_empty_config_.yaml"
+            return
+        # if entry.provider == "hydra":
+        #     return
 
-    for key, entry in config_store.repo.items():
+        logger.debug(f"Setting target for structured config node {entry} to {target}")
+        with omegaconf.open_dict(entry.node):
+            target = f"{target.__module__}.{target.__qualname__}"
+            entry.node["_target_"] = target
+
+    for _key, entry in config_store.repo.items():
         _set_node_target(entry)
-        # with omegaconf.open_dict(entry.node):
-        #     entry.node["_target_"] = entry.node._metadata.object_type
 
-    if config_path.name == "config.yaml":
-        # Make sure not to load the (base) Hydra config file that is also called `config.yaml`!
-        pass
     if config := _try_load_from_config_store(
         config_path, configs_dir=configs_dir, config_store=config_store
     ):
@@ -1046,9 +1021,9 @@ def _get_schema_from_target(config: dict | DictConfig) -> ObjectSchema | Schema:
         if description := param_descriptions.get(property_name):
             property_dict["description"] = description
         else:
-            property_dict["description"] = (
-                f"The {property_name} parameter of the {target.__qualname__}."
-            )
+            property_dict[
+                "description"
+            ] = f"The {property_name} parameter of the {target.__qualname__}."
 
     if config.get("_partial_"):
         json_schema["required"] = []
