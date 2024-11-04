@@ -45,6 +45,7 @@ class AutoSchemaEventHandler(PatternMatchingEventHandler):
         stop_on_error: bool,
         quiet: bool,
         add_headers: bool | None,
+        config_store: ConfigStore | None = None,
     ):
         self.configs_dir = configs_dir
         super().__init__(
@@ -75,7 +76,7 @@ class AutoSchemaEventHandler(PatternMatchingEventHandler):
             stop_on_error=stop_on_error,
             quiet=quiet,
             add_headers=add_headers,
-            config_store=ConfigStore.instance(),  # todo: could also try ConfigStore.instance()?
+            config_store=config_store or ConfigStore.instance(),
         )
         self.console = rich.console.Console()
         self.console.log(

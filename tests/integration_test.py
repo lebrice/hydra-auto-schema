@@ -20,16 +20,10 @@ structured_app_dir = this_dir / "structured_app"
 @pytest.mark.parametrize(
     "args",
     [
-        f"{test_configs_dir} --stop-on-error",
+        f"{this_dir} --stop-on-error",
         # TODO: Perhaps we could try to import the repo_root as a python module, or add it to
         # path, or something similar, so that we can actually get a "hydrated" ConfigStore object?
-        pytest.param(
-            f"{structured_app_dir} --stop-on-error",
-            marks=pytest.mark.xfail(
-                raises=hydra.errors.MissingConfigException,
-                strict=True,
-            ),
-        ),
+        f"{structured_app_dir} --stop-on-error",
     ],
 )
 def test_run_via_cli_without_errors(args: str):
@@ -39,6 +33,7 @@ def test_run_via_cli_without_errors(args: str):
     main(shlex.split(args))
 
 
+@pytest.mark.skip(reason="Shouldn't really be run as a uv tool anyway.")
 def test_run_with_uvx():
     """Actually run the command on the repo, via the `[tool.rye.scripts]` entry in
     pyproject.toml."""
@@ -55,6 +50,7 @@ def test_run_with_uvx():
     )
 
 
+@pytest.mark.skip(reason="Shouldn't really be run as a uv tool anyway.")
 def test_run_as_uv_tool():
     """Actually run the command on the repo, via the `[tool.rye.scripts]` entry in
     pyproject.toml."""

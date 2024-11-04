@@ -153,7 +153,7 @@ def add_schemas_to_all_hydra_configs(
                 )
             else:
                 logger.debug(
-                    f"Schema file {_relative_to_cwd(schema_file)} was already successfully created. Skipping."
+                    f"Schema file {pretty_path(schema_file)} was already successfully created. Skipping."
                 )
                 continue
 
@@ -802,7 +802,9 @@ def load_config(
             assert entry.name == "_dummy_empty_config_.yaml"
             return
 
-        logger.debug(f"Setting target for structured config node {entry} to {target}")
+        logger.debug(
+            f"Setting target for structured config node {entry.name} to {target}"
+        )
         with omegaconf.open_dict(entry.node):
             target = f"{target.__module__}.{target.__qualname__}"
             entry.node["_target_"] = target
