@@ -1,7 +1,9 @@
+import shlex
 import subprocess
 from pathlib import Path
 
 import hydra.core.plugins
+import hydra.errors
 import pytest
 from hydra.plugins.search_path_plugin import SearchPathPlugin
 
@@ -10,14 +12,31 @@ from hydra_plugins.auto_schema.auto_schema_plugin import (
     AutoSchemaPlugin,
 )
 
-config_dir = Path(__file__).parent / "configs"
+this_dir = Path(__file__).parent
+test_configs_dir = this_dir / "configs"
+structured_app_dir = this_dir / "structured_app"
 
 
-def test_run_via_cli_without_errors():
+@pytest.mark.parametrize(
+    "args",
+    [
+        f"{test_configs_dir} --stop-on-error",
+        # TODO: Perhaps we could try to import the repo_root as a python module, or add it to
+        # path, or something similar, so that we can actually get a "hydrated" ConfigStore object?
+        pytest.param(
+            f"{structured_app_dir} --stop-on-error",
+            marks=pytest.mark.xfail(
+                raises=hydra.errors.MissingConfigException,
+                strict=True,
+            ),
+        ),
+    ],
+)
+def test_run_via_cli_without_errors(args: str):
     """Checks that the command completes without errors."""
     # Run programmatically instead of with a subprocess so we can get nice coverage stats.
     # assuming we're at the project root directory.
-    main([f"{config_dir}", "--stop-on-error"])
+    main(shlex.split(args))
 
 
 def test_run_with_uvx():
@@ -30,7 +49,7 @@ def test_run_with_uvx():
             "--from=.",
             "--reinstall-package=hydra-auto-schema",
             "hydra-auto-schema",
-            f"{config_dir}",
+            f"{test_configs_dir}",
         ],
         text=True,
     )
@@ -48,7 +67,7 @@ def test_run_as_uv_tool():
             "--from=.",
             "--reinstall-package=hydra-auto-schema",
             "hydra-auto-schema",
-            f"{config_dir}",
+            f"{test_configs_dir}",
         ],
         text=True,
     )
