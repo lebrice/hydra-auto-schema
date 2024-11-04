@@ -97,6 +97,23 @@ def main(argv: list[str] | None = None):
 
     configs_dir = configs_dir.resolve()
 
+    if quiet:
+        logger.setLevel(logging.NOTSET)
+    elif verbose:
+        if verbose >= 3:
+            logger.setLevel(logging.DEBUG)
+        elif verbose == 2:
+            logger.setLevel(logging.INFO)
+        else:
+            assert verbose == 1
+            logger.setLevel(logging.WARNING)
+    else:
+        logger.setLevel(logging.ERROR)
+    logger.debug(
+        f"{configs_dir=} {schemas_dir=} {repo_root=} {regen_schemas=} {stop_on_error=} {quiet=} {verbose=} {add_headers=} {watch=}"
+    )
+    # try to find a ConfigStore?
+
     from hydra.core.config_store import ConfigStore
     from hydra.core.singleton import Singleton
 
@@ -133,24 +150,6 @@ def main(argv: list[str] | None = None):
         sys.path = _sys_path_before
         Singleton.set_state(_singleton_state_before)
         os.chdir(_dir_before)
-
-    # try to find a ConfigStore?
-
-    if quiet:
-        logger.setLevel(logging.NOTSET)
-    elif verbose:
-        if verbose >= 3:
-            logger.setLevel(logging.DEBUG)
-        elif verbose == 2:
-            logger.setLevel(logging.INFO)
-        else:
-            assert verbose == 1
-            logger.setLevel(logging.WARNING)
-    else:
-        logger.setLevel(logging.ERROR)
-    logger.debug(
-        f"{configs_dir=} {schemas_dir=} {repo_root=} {regen_schemas=} {stop_on_error=} {quiet=} {verbose=} {add_headers=} {watch=}"
-    )
 
     if watch:
         observer = Observer()
