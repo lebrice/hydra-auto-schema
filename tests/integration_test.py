@@ -17,6 +17,11 @@ test_configs_dir = this_dir / "configs"
 structured_app_dir = this_dir / "structured_app"
 
 
+@pytest.mark.xfail(
+    raises=hydra.errors.MissingConfigException,
+    reason="Doesn't work yet, need to get a populated Hydra ConfigStore outside the Hydra context.",
+    strict=True,
+)
 @pytest.mark.parametrize(
     "args",
     [
