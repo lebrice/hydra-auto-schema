@@ -83,7 +83,7 @@
                   "default": "hydra_auto_schema.auto_schema_test.Bar",
                   "title": "Target",
                   "type": "string",
-                  "description": "Target to instantiate, in this case: `<class 'hydra_auto_schema.auto_schema_test.Bar'>`\nSee the Hydra docs for '_target_': https://hydra.cc/docs/advanced/instantiate_objects/overview/\n",
+                  "description": "Target to instantiate, in this case: `Bar`\nSee the Hydra docs for '_target_': https://hydra.cc/docs/advanced/instantiate_objects/overview/\n",
                   "const": "hydra_auto_schema.auto_schema_test.Bar"
                 },
                 "_recursive_": {
@@ -115,7 +115,7 @@
               ],
               "title": "Bar",
               "type": "object",
-              "description": "Based on the signature of <class 'hydra_auto_schema.auto_schema_test.Bar'>.\n",
+              "description": "Based on the signature of Bar.\n",
               "additionalProperties": false
             }
           }

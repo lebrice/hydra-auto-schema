@@ -975,7 +975,9 @@ def _get_schema_from_target(config: dict | DictConfig) -> ObjectSchema | Schema:
     assert isinstance(config, dict | DictConfig)
     # logger.debug(f"Config: {config}")
     target = hydra.utils.get_object(config["_target_"])
-
+    target_name = getattr(
+        target, "__qualname__", getattr(target, "__name__", str(target))
+    )
     object_type = _get_dataclass_from_target(target=target, config=config)
 
     try:
@@ -996,7 +998,8 @@ def _get_schema_from_target(config: dict | DictConfig) -> ObjectSchema | Schema:
 
     # Add a description
     json_schema["description"] = (
-        f"Based on the signature of {target}.\n" + json_schema.get("description", "")
+        f"Based on the signature of {target_name}.\n"
+        + json_schema.get("description", "")
     )
 
     docs_to_search: list[dp.Docstring] = []
@@ -1026,7 +1029,7 @@ def _get_schema_from_target(config: dict | DictConfig) -> ObjectSchema | Schema:
         else:
             property_dict[
                 "description"
-            ] = f"The {property_name} parameter of the {target.__qualname__}."
+            ] = f"The {property_name} parameter of the {target_name}."
 
     if config.get("_partial_"):
         json_schema["required"] = []
@@ -1042,7 +1045,7 @@ def _get_schema_from_target(config: dict | DictConfig) -> ObjectSchema | Schema:
             const=config["_target_"],
             # pattern=r"", # todo: Use a pattern to match python module import strings.
             description=(
-                f"Target to instantiate, in this case: `{target}`\n"
+                f"Target to instantiate, in this case: `{target.__name__}`\n"
                 # f"* Source: <file://{relative_to_cwd(inspect.getfile(target))}>\n"
                 # f"* Config file: <file://{config_file}>\n"
                 f"See the Hydra docs for '_target_': https://hydra.cc/docs/advanced/instantiate_objects/overview/\n"
@@ -1079,7 +1082,11 @@ class _MyGenerateJsonSchema(GenerateJsonSchema):
             The generated JSON schema.
         """
         enum_type = schema["cls"]
-        logger.debug(f"Enum of type {enum_type}")
-        if custom_handler := custom_enum_schemas.get(enum_type):
-            schema = custom_handler(enum_type, schema)
+        logger.debug(f"Getting the schema for Enum of type {enum_type}")
+        for handler_enum_type, custom_handler in custom_enum_schemas.items():
+            if handler_enum_type is enum_type or issubclass(
+                enum_type, handler_enum_type
+            ):
+                schema = custom_handler(enum_type, schema)
+                break
         return super().enum_schema(schema)

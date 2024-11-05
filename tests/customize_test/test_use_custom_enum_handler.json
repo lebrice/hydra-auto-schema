@@ -1,6 +1,6 @@
 {
-  "title": "Foo",
-  "description": "Based on the signature of Foo.\n",
+  "title": "resnet50",
+  "description": "Based on the signature of resnet50.\n",
   "properties": {
     "defaults": {
       "title": "Hydra defaults",
@@ -46,9 +46,9 @@
     "_target_": {
       "type": "string",
       "title": "Target",
-      "description": "Target to instantiate, in this case: `Foo`\nSee the Hydra docs for '_target_': https://hydra.cc/docs/advanced/instantiate_objects/overview/\n",
-      "default": "hydra_auto_schema.auto_schema_test.Foo",
-      "const": "hydra_auto_schema.auto_schema_test.Foo"
+      "description": "Target to instantiate, in this case: `resnet50`\nSee the Hydra docs for '_target_': https://hydra.cc/docs/advanced/instantiate_objects/overview/\n",
+      "default": "tests.customize_test.resnet50",
+      "const": "tests.customize_test.resnet50"
     },
     "_convert_": {
       "type": "string",
@@ -59,7 +59,7 @@
         "all"
       ],
       "title": " Convert ",
-      "description": "The _convert_ parameter of the Foo.",
+      "description": "The _convert_ parameter of the resnet50.",
       "default": "all"
     },
     "_partial_": {
@@ -70,13 +70,26 @@
     "_recursive_": {
       "type": "boolean",
       "title": " Recursive ",
-      "description": "The _recursive_ parameter of the Foo.",
+      "description": "The _recursive_ parameter of the resnet50.",
       "default": false
     },
-    "bar": {
-      "title": "Bar",
-      "type": "string",
-      "description": "Description of the `bar` argument."
+    "weights": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ResNet50_Weights"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "The weights parameter of the resnet50."
+    },
+    "progress": {
+      "default": true,
+      "title": "Progress",
+      "type": "boolean",
+      "description": "The progress parameter of the resnet50."
     }
   },
   "dependentRequired": {
@@ -93,7 +106,17 @@
       "_target_"
     ]
   },
-  "additionalProperties": false,
-  "required": [],
+  "additionalProperties": true,
+  "$defs": {
+    "ResNet50_Weights": {
+      "enum": [
+        "IMAGENET1K_V1",
+        "IMAGENET1K_V2",
+        "IMAGENET1K_V2"
+      ],
+      "title": "ResNet50_Weights",
+      "type": "string"
+    }
+  },
   "type": "object"
 }
