@@ -163,3 +163,4 @@ cython_debug/
 .schemas
 outputs
 tests/structured_app/.schemas
+tests/structured_app/schemas

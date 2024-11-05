@@ -112,14 +112,40 @@ def main(argv: list[str] | None = None):
         f"{configs_dir=} {schemas_dir=} {repo_root=} {regen_schemas=} {stop_on_error=} {quiet=} {verbose=} {add_headers=} {watch=}"
     )
     # try to find a ConfigStore?
+    _sys_path_before = sys.path.copy()
+    try:
+        sys.path.append(str(repo_root.absolute()))
+        sys.path.append(str(configs_dir.absolute()))
+        # Might be dumb, but perhaps we should import the module that contains the configs?
+        # importlib.import_module(configs_dir.name, package=".")
+        from hydra.core.config_store import ConfigStore
 
-    from hydra.core.config_store import ConfigStore
+        config_store = ConfigStore.instance()
 
-    config_store = ConfigStore.instance()
+        if watch:
+            observer = Observer()
+            handler = AutoSchemaEventHandler(
+                repo_root=repo_root,
+                configs_dir=configs_dir,
+                schemas_dir=schemas_dir,
+                regen_schemas=regen_schemas,
+                stop_on_error=stop_on_error,
+                quiet=quiet,
+                add_headers=add_headers,
+                config_store=config_store,
+            )
+            observer.schedule(handler, str(configs_dir), recursive=True)
+            observer.start()
+            logger.info("Watching for changes in the config files.")
+            try:
+                while True:
+                    time.sleep(1)
+            except KeyboardInterrupt:
+                observer.stop()
+            observer.join()
+            return
 
-    if watch:
-        observer = Observer()
-        handler = AutoSchemaEventHandler(
+        add_schemas_to_all_hydra_configs(
             repo_root=repo_root,
             configs_dir=configs_dir,
             schemas_dir=schemas_dir,
@@ -129,28 +155,11 @@ def main(argv: list[str] | None = None):
             add_headers=add_headers,
             config_store=config_store,
         )
-        observer.schedule(handler, str(configs_dir), recursive=True)
-        observer.start()
-        logger.info("Watching for changes in the config files.")
-        try:
-            while True:
-                time.sleep(1)
-        except KeyboardInterrupt:
-            observer.stop()
-        observer.join()
-        return
-
-    add_schemas_to_all_hydra_configs(
-        repo_root=repo_root,
-        configs_dir=configs_dir,
-        schemas_dir=schemas_dir,
-        regen_schemas=regen_schemas,
-        stop_on_error=stop_on_error,
-        quiet=quiet,
-        add_headers=add_headers,
-        config_store=config_store,
-    )
-    logger.info("Done updating the schemas for the Hydra config files.")
+        logger.info("Done updating the schemas for the Hydra config files.")
+    except Exception:
+        raise
+    finally:
+        sys.path = _sys_path_before
 
 
 if __name__ == "__main__":
