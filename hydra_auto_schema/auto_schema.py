@@ -104,9 +104,9 @@ def add_schemas_to_all_hydra_configs(
     config_files = _yaml_files_in(configs_dir)
     if not config_files:
         if stop_on_error:
-            raise RuntimeError("No config files were passed!")
+            raise RuntimeError("No config files were found!")
         else:
-            warnings.warn(RuntimeWarning("No config files were passed! Skipping."))
+            warnings.warn(RuntimeWarning("No config files were found! Skipping."))
         # return
 
     if schemas_dir is None:
