@@ -1079,7 +1079,11 @@ class _MyGenerateJsonSchema(GenerateJsonSchema):
             The generated JSON schema.
         """
         enum_type = schema["cls"]
-        logger.debug(f"Enum of type {enum_type}")
-        if custom_handler := custom_enum_schemas.get(enum_type):
-            schema = custom_handler(enum_type, schema)
+        logger.debug(f"Getting the schema for Enum of type {enum_type}")
+        for handler_enum_type, custom_handler in custom_enum_schemas.items():
+            if handler_enum_type is enum_type or issubclass(
+                enum_type, handler_enum_type
+            ):
+                schema = custom_handler(enum_type, schema)
+                break
         return super().enum_schema(schema)
