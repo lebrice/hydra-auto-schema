@@ -1,0 +1,122 @@
+{
+  "title": "resnet50",
+  "description": "Based on the signature of <function resnet50 at 0x73d83deab910>.\n",
+  "properties": {
+    "defaults": {
+      "title": "Hydra defaults",
+      "description": "Hydra defaults for this config. See https://hydra.cc/docs/advanced/defaults_list/",
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "propertyNames": {
+              "pattern": "^(override\\s*)?(/?\\w*)+$"
+            },
+            "patternProperties": {
+              "^(override\\s*)?(/?\\w*)*$": {
+                "type": "string",
+                "pattern": "\\w*(.yaml|.yml)?$"
+              }
+            },
+            "minProperties": 1,
+            "maxProperties": 1
+          },
+          {
+            "type": "string",
+            "pattern": "^\\w+(.yaml|.yml)?$"
+          },
+          {
+            "type": "object",
+            "propertyNames": {
+              "pattern": "^(override\\s*)?(/?\\w*)+$"
+            },
+            "patternProperties": {
+              "^(override\\s*)?(/?\\w*)*$": {
+                "type": "null"
+              }
+            },
+            "minProperties": 1,
+            "maxProperties": 1
+          }
+        ]
+      },
+      "uniqueItems": true
+    },
+    "_target_": {
+      "type": "string",
+      "title": "Target",
+      "description": "Target to instantiate, in this case: `<function resnet50 at 0x73d83deab910>`\nSee the Hydra docs for '_target_': https://hydra.cc/docs/advanced/instantiate_objects/overview/\n",
+      "default": "tests.customize_test.resnet50",
+      "const": "tests.customize_test.resnet50"
+    },
+    "_convert_": {
+      "type": "string",
+      "enum": [
+        "none",
+        "partial",
+        "object",
+        "all"
+      ],
+      "title": " Convert ",
+      "description": "The _convert_ parameter of the resnet50.",
+      "default": "all"
+    },
+    "_partial_": {
+      "type": "boolean",
+      "title": "Partial",
+      "description": "Whether this config calls the target function when instantiated, or creates a `functools.partial` that will call the target.\nSee: https://hydra.cc/docs/advanced/instantiate_objects/overview"
+    },
+    "_recursive_": {
+      "type": "boolean",
+      "title": " Recursive ",
+      "description": "The _recursive_ parameter of the resnet50.",
+      "default": false
+    },
+    "weights": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ResNet50_Weights"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "The weights parameter of the resnet50."
+    },
+    "progress": {
+      "default": true,
+      "title": "Progress",
+      "type": "boolean",
+      "description": "The progress parameter of the resnet50."
+    }
+  },
+  "dependentRequired": {
+    "_convert_": [
+      "_target_"
+    ],
+    "_partial_": [
+      "_target_"
+    ],
+    "_args_": [
+      "_target_"
+    ],
+    "_recursive_": [
+      "_target_"
+    ]
+  },
+  "additionalProperties": true,
+  "$defs": {
+    "ResNet50_Weights": {
+      "enum": [
+        "IMAGENET1K_V1",
+        "IMAGENET1K_V2",
+        "IMAGENET1K_V2"
+      ],
+      "title": "ResNet50_Weights",
+      "type": "string"
+    }
+  },
+  "type": "object"
+}
