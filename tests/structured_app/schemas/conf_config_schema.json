@@ -1,6 +1,6 @@
 {
   "title": "Config",
-  "description": "Based on the signature of <class '__main__.Config'>.\n",
+  "description": "Based on the signature of <class 'conf.Config'>.\n",
   "properties": {
     "defaults": {
       "title": "Hydra defaults",
@@ -46,8 +46,8 @@
     "_target_": {
       "type": "string",
       "title": "Target",
-      "description": "Target to instantiate, in this case: `<class '__main__.Config'>`\nSee the Hydra docs for '_target_': https://hydra.cc/docs/advanced/instantiate_objects/overview/\n",
-      "const": "__main__.Config"
+      "description": "Target to instantiate, in this case: `<class 'conf.Config'>`\nSee the Hydra docs for '_target_': https://hydra.cc/docs/advanced/instantiate_objects/overview/\n",
+      "const": "conf.Config"
     },
     "_convert_": {
       "type": "string",
@@ -73,7 +73,7 @@
     "db": {
       "$ref": "#/$defs/DBConfig",
       "default": "???",
-      "description": "Based on the signature of <class '__main__.MySQLConfig'>.\n",
+      "description": "Based on the signature of <class 'conf.MySQLConfig'>.\n",
       "properties": {
         "driver": {
           "default": "mysql",
@@ -108,8 +108,8 @@
         "_target_": {
           "type": "string",
           "title": "Target",
-          "const": "__main__.MySQLConfig",
-          "description": "Target to instantiate, in this case: `<class '__main__.MySQLConfig'>`\nSee the Hydra docs for '_target_': https://hydra.cc/docs/advanced/instantiate_objects/overview/\n"
+          "const": "conf.MySQLConfig",
+          "description": "Target to instantiate, in this case: `<class 'conf.MySQLConfig'>`\nSee the Hydra docs for '_target_': https://hydra.cc/docs/advanced/instantiate_objects/overview/\n"
         }
       },
       "title": "MySQLConfig",
