@@ -7,7 +7,11 @@ import yaml
 from hydra.core.config_store import ConfigStore
 from pytest_regressions.file_regression import FileRegressionFixture
 
-from .auto_schema import _add_schema_header, _create_schema_for_config
+from .auto_schema import (
+    _add_schema_header,
+    _create_schema_for_config,
+    add_schemas_to_all_hydra_configs,
+)
 
 REPO_ROOTDIR = Path.cwd()
 IN_GITHUB_CI = "GITHUB_ACTIONS" in os.environ
@@ -83,3 +87,20 @@ def test_make_schema(config_file: Path, file_regression: FileRegressionFixture):
     file_regression.check(
         json.dumps(schema, indent=2) + "\n", fullpath=schema_file, extension=".json"
     )
+
+
+def test_warns_when_no_config_files_found(tmp_path: Path):
+    with pytest.warns(RuntimeWarning, match="No config files were found"):
+        add_schemas_to_all_hydra_configs(
+            repo_root=tmp_path, configs_dir=tmp_path, schemas_dir=tmp_path
+        )
+
+
+def test_raises_when_no_config_files_found_and_stop_on_error(tmp_path: Path):
+    with pytest.raises(RuntimeError, match="No config files were found"):
+        add_schemas_to_all_hydra_configs(
+            repo_root=tmp_path,
+            configs_dir=tmp_path,
+            schemas_dir=tmp_path,
+            stop_on_error=True,
+        )

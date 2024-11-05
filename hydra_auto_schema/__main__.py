@@ -1,6 +1,5 @@
 import argparse
 import logging
-import os
 import sys
 import time
 from pathlib import Path
@@ -97,45 +96,6 @@ def main(argv: list[str] | None = None):
 
     configs_dir = configs_dir.resolve()
 
-    from hydra.core.config_store import ConfigStore
-    from hydra.core.singleton import Singleton
-
-    # assert False, (repo_root, configs_dir)
-    _dir_before = os.getcwd()
-    _sys_path_before = sys.path.copy()
-    _singleton_state_before = Singleton.get_state()
-
-    try:
-        os.chdir(repo_root)
-        repo_root = Path(".")
-        sys.path.append(".")  # UGLY HACK!
-
-        # Idea (might not be necessary): import all hydra-related modules in the repo root to
-        # populate the ConfigStore.
-        # package = repo_root.name.replace("-", "_")
-        # for module in repo_root.glob("*.py"):
-        #     module_name = module.stem
-        #     if (
-        #         "import hydra" in (module_text := module.read_text())
-        #         or "from hydra" in module_text or "ConfigStore" in module_text
-        #     ):
-        #         logger.info(
-        #             f"Importing module {module_name} from {package} to populate Hydra's ConfigStore."
-        #         )
-        #         importlib.import_module(module_name, package=package)
-        config_store = ConfigStore.instance()
-        # FIXME: It seems like changing this value is necessary? (otherwise we get an error later.)
-        configs_dir = configs_dir.relative_to(os.getcwd())
-
-    except ModuleNotFoundError:
-        config_store = None
-    finally:
-        sys.path = _sys_path_before
-        Singleton.set_state(_singleton_state_before)
-        os.chdir(_dir_before)
-
-    # try to find a ConfigStore?
-
     if quiet:
         logger.setLevel(logging.NOTSET)
     elif verbose:
@@ -151,6 +111,11 @@ def main(argv: list[str] | None = None):
     logger.debug(
         f"{configs_dir=} {schemas_dir=} {repo_root=} {regen_schemas=} {stop_on_error=} {quiet=} {verbose=} {add_headers=} {watch=}"
     )
+    # try to find a ConfigStore?
+
+    from hydra.core.config_store import ConfigStore
+
+    config_store = ConfigStore.instance()
 
     if watch:
         observer = Observer()

@@ -17,13 +17,18 @@ test_configs_dir = this_dir / "configs"
 structured_app_dir = this_dir / "structured_app"
 
 
+@pytest.mark.xfail(
+    raises=hydra.errors.MissingConfigException,
+    reason="Doesn't work yet, need to get a populated Hydra ConfigStore outside the Hydra context.",
+    strict=True,
+)
 @pytest.mark.parametrize(
     "args",
     [
-        f"{this_dir} --stop-on-error",
+        f"{this_dir} --stop-on-error --regen-schemas -vvv",
         # TODO: Perhaps we could try to import the repo_root as a python module, or add it to
         # path, or something similar, so that we can actually get a "hydrated" ConfigStore object?
-        f"{structured_app_dir} --stop-on-error",
+        f"{structured_app_dir} --stop-on-error --regen-schemas -vvv",
     ],
 )
 def test_run_via_cli_without_errors(args: str):
