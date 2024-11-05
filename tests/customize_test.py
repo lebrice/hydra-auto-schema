@@ -197,7 +197,7 @@ def test_use_custom_enum_handler(
         spec=_handle_torchvision_weights_enum, wraps=_handle_torchvision_weights_enum
     )
 
-    monkeypatch.setitem(custom_enum_schemas, ResNet50_Weights, mock)
+    monkeypatch.setitem(custom_enum_schemas, WeightsEnum, mock)
 
     config = {
         "_target_": f"{resnet50.__module__}.{resnet50.__name__}",

@@ -1,6 +1,6 @@
 {
   "title": "Config",
-  "description": "Based on the signature of <class '__main__.Config'>.\n",
+  "description": "Based on the signature of Config.\n",
   "properties": {
     "defaults": {
       "title": "Hydra defaults",
@@ -46,7 +46,7 @@
     "_target_": {
       "type": "string",
       "title": "Target",
-      "description": "Target to instantiate, in this case: `<class '__main__.Config'>`\nSee the Hydra docs for '_target_': https://hydra.cc/docs/advanced/instantiate_objects/overview/\n",
+      "description": "Target to instantiate, in this case: `Config`\nSee the Hydra docs for '_target_': https://hydra.cc/docs/advanced/instantiate_objects/overview/\n",
       "const": "__main__.Config"
     },
     "_convert_": {
@@ -73,7 +73,7 @@
     "db": {
       "$ref": "#/$defs/DBConfig",
       "default": "???",
-      "description": "Based on the signature of <class '__main__.MySQLConfig'>.\n",
+      "description": "Based on the signature of MySQLConfig.\n",
       "properties": {
         "driver": {
           "default": "mysql",
@@ -109,7 +109,7 @@
           "type": "string",
           "title": "Target",
           "const": "__main__.MySQLConfig",
-          "description": "Target to instantiate, in this case: `<class '__main__.MySQLConfig'>`\nSee the Hydra docs for '_target_': https://hydra.cc/docs/advanced/instantiate_objects/overview/\n"
+          "description": "Target to instantiate, in this case: `MySQLConfig`\nSee the Hydra docs for '_target_': https://hydra.cc/docs/advanced/instantiate_objects/overview/\n"
         }
       },
       "title": "MySQLConfig",
@@ -173,13 +173,13 @@
         "sweeper": {
           "default": "???",
           "title": "BasicSweeper",
-          "description": "Based on the signature of <class 'hydra._internal.core_plugins.basic_sweeper.BasicSweeper'>.\n",
+          "description": "Based on the signature of BasicSweeper.\n",
           "properties": {
             "_target_": {
               "default": "hydra._internal.core_plugins.basic_sweeper.BasicSweeper",
               "title": "Target",
               "type": "string",
-              "description": "Target to instantiate, in this case: `<class 'hydra._internal.core_plugins.basic_sweeper.BasicSweeper'>`\nSee the Hydra docs for '_target_': https://hydra.cc/docs/advanced/instantiate_objects/overview/\n",
+              "description": "Target to instantiate, in this case: `BasicSweeper`\nSee the Hydra docs for '_target_': https://hydra.cc/docs/advanced/instantiate_objects/overview/\n",
               "const": "hydra._internal.core_plugins.basic_sweeper.BasicSweeper"
             },
             "_recursive_": {
@@ -232,13 +232,13 @@
         "launcher": {
           "default": "???",
           "title": "BasicLauncher",
-          "description": "Based on the signature of <class 'hydra._internal.core_plugins.basic_launcher.BasicLauncher'>.\n",
+          "description": "Based on the signature of BasicLauncher.\n",
           "properties": {
             "_target_": {
               "default": "hydra._internal.core_plugins.basic_launcher.BasicLauncher",
               "title": "Target",
               "type": "string",
-              "description": "Target to instantiate, in this case: `<class 'hydra._internal.core_plugins.basic_launcher.BasicLauncher'>`\nSee the Hydra docs for '_target_': https://hydra.cc/docs/advanced/instantiate_objects/overview/\n",
+              "description": "Target to instantiate, in this case: `BasicLauncher`\nSee the Hydra docs for '_target_': https://hydra.cc/docs/advanced/instantiate_objects/overview/\n",
               "const": "hydra._internal.core_plugins.basic_launcher.BasicLauncher"
             },
             "_recursive_": {
@@ -304,12 +304,12 @@
           "type": "string",
           "title": "Target",
           "const": "hydra.conf.HydraConf",
-          "description": "Target to instantiate, in this case: `<class 'hydra.conf.HydraConf'>`\nSee the Hydra docs for '_target_': https://hydra.cc/docs/advanced/instantiate_objects/overview/\n"
+          "description": "Target to instantiate, in this case: `HydraConf`\nSee the Hydra docs for '_target_': https://hydra.cc/docs/advanced/instantiate_objects/overview/\n"
         }
       },
       "title": "HydraConf",
       "type": "object",
-      "description": "Based on the signature of <class 'hydra.conf.HydraConf'>.\n",
+      "description": "Based on the signature of HydraConf.\n",
       "additionalProperties": true
     }
   },

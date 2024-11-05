@@ -1,6 +1,6 @@
 {
   "title": "resnet50",
-  "description": "Based on the signature of <function resnet50 at 0x73d83deab910>.\n",
+  "description": "Based on the signature of resnet50.\n",
   "properties": {
     "defaults": {
       "title": "Hydra defaults",
@@ -46,7 +46,7 @@
     "_target_": {
       "type": "string",
       "title": "Target",
-      "description": "Target to instantiate, in this case: `<function resnet50 at 0x73d83deab910>`\nSee the Hydra docs for '_target_': https://hydra.cc/docs/advanced/instantiate_objects/overview/\n",
+      "description": "Target to instantiate, in this case: `resnet50`\nSee the Hydra docs for '_target_': https://hydra.cc/docs/advanced/instantiate_objects/overview/\n",
       "default": "tests.customize_test.resnet50",
       "const": "tests.customize_test.resnet50"
     },
