@@ -163,3 +163,5 @@ cython_debug/
 .schemas
 outputs
 tests/structured_app/.schemas
+.vscode
+!tests/**/.vscode

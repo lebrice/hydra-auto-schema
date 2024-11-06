@@ -21,10 +21,11 @@ from watchdog.observers import Observer
 from hydra_auto_schema.auto_schema import get_schema_file_path
 from hydra_auto_schema.filewatcher import AutoSchemaEventHandler
 
-from .auto_schema_test import config_dir
+config_dir = Path(__file__).parent / "configs"
+
 
 # TODO: Figure out how the calls differ on MacOS.
-pytestmark = pytest.mark.xfail(
+xfail_on_macos = pytest.mark.xfail(
     sys.platform == "darwin",
     reason="Seems like watchdog uses different events on MacOS.",
     # strict=True,
@@ -106,6 +107,7 @@ def _get_all_schema_files(schemas_dir: Path) -> list[Path]:
     return list(schemas_dir.rglob("*.json"))
 
 
+@xfail_on_macos
 def test_on_created(
     filewatcher: AutoSchemaEventHandler, configs_dir: Path, schemas_dir: Path
 ):
@@ -133,6 +135,7 @@ def test_on_created(
     # assert set(schemas_after) == (set(schemas_before) | {schema_file})
 
 
+@xfail_on_macos
 def test_on_modified(
     filewatcher: AutoSchemaEventHandler, configs_dir: Path, schemas_dir: Path
 ):
@@ -157,6 +160,7 @@ def test_on_modified(
     assert set(schemas_after) == set(schemas_before)
 
 
+@xfail_on_macos
 def test_on_deleted(
     filewatcher: AutoSchemaEventHandler, configs_dir: Path, schemas_dir: Path
 ):
@@ -181,6 +185,7 @@ def test_on_deleted(
     assert set(schemas_after) == set(schemas_before) - {schema_file}
 
 
+@xfail_on_macos
 def test_on_moved(
     filewatcher: AutoSchemaEventHandler, configs_dir: Path, schemas_dir: Path
 ):

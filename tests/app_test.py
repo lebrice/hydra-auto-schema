@@ -10,7 +10,7 @@ from pytest_regressions.file_regression import FileRegressionFixture
 
 from hydra_plugins.auto_schema import auto_schema_plugin
 
-structured_app_dir = Path(__file__).parent
+structured_app_dir = Path(__file__).parent / "structured_app"
 
 
 @pytest.fixture
@@ -67,9 +67,9 @@ def structured_app_result(
     command_line_arguments: str,
     monkeypatch: pytest.MonkeyPatch,
 ):
-    monkeypatch.chdir(new_repo_root)
+    # monkeypatch.chdir(new_repo_root)
     result = subprocess.run(
-        ["python", "app.py", *shlex.split(command_line_arguments)],
+        ["python", str(new_repo_root / "app.py"), *shlex.split(command_line_arguments)],
         capture_output=True,
         text=True,
     )
