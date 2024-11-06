@@ -58,10 +58,11 @@ class Config:
     debug: bool = False
 
 
-cs = ConfigStore.instance()
-cs.store(name="base_config", node=Config)
-cs.store(group="db", name="base_mysql", node=MySQLConfig)
-cs.store(group="db", name="base_postgresql", node=PostGreSQLConfig)
+if __name__ == "__main__":
+    cs = ConfigStore.instance()
+    cs.store(name="base_config", node=Config)
+    cs.store(group="db", name="base_mysql", node=MySQLConfig)
+    cs.store(group="db", name="base_postgresql", node=PostGreSQLConfig)
 
 
 auto_schema_plugin.configure(

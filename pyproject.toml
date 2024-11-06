@@ -26,6 +26,11 @@ build-backend = "hatchling.build"
 [tool.hatch.version]
 source = "uv-dynamic-versioning"
 
+[tool.pytest.ini_options]
+testpaths = ["hydra_auto_schema", "tests"]
+norecursedirs = [".venv"]
+addopts = ["--doctest-modules"]
+
 [tool.uv]
 dev-dependencies = [
     "pytest>=8.3.3",

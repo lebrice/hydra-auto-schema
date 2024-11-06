@@ -21,7 +21,6 @@ import subprocess
 import sys
 import typing
 import warnings
-from collections.abc import Callable, MutableMapping
 from logging import getLogger as get_logger
 from pathlib import Path
 from typing import Any, TypeVar
@@ -48,14 +47,18 @@ from pydantic.json_schema import GenerateJsonSchema, JsonSchemaValue
 from pydantic_core import core_schema
 from tqdm.rich import tqdm_rich
 
-from hydra_auto_schema.customize import custom_enum_schemas, special_handlers
+from hydra_auto_schema.customize import (
+    custom_enum_schemas,
+    custom_hydra_zen_builds_args,
+    schema_conflict_handlers,
+)
 from hydra_auto_schema.hydra_schema import (
     HYDRA_CONFIG_SCHEMA,
     ObjectSchema,
     PropertySchema,
     Schema,
 )
-from hydra_auto_schema.utils import pretty_path
+from hydra_auto_schema.utils import merge_dicts, pretty_path
 
 logger = get_logger(__name__)
 
@@ -459,8 +462,11 @@ def _create_schema_for_config(
             assert "properties" in nested_value_schema
 
         if is_top_level:
-            schema = _merge_dicts(
-                schema, nested_value_schema, conflict_handler=_overwrite
+            schema = merge_dicts(
+                schema,
+                nested_value_schema,
+                conflict_handler=_overwrite,
+                conflict_handlers=schema_conflict_handlers,
             )
             continue
 
@@ -481,10 +487,11 @@ def _create_schema_for_config(
             assert isinstance(last_key, str)
             where_to_set["properties"][last_key] = nested_value_schema  # type: ignore
         else:
-            where_to_set["properties"] = _merge_dicts(  # type: ignore
+            where_to_set["properties"] = merge_dicts(  # type: ignore
                 where_to_set["properties"],
                 {last_key: nested_value_schema},  # type: ignore
                 conflict_handler=_overwrite,
+                conflict_handlers=schema_conflict_handlers,
             )
 
     return schema
@@ -546,7 +553,7 @@ def _update_schema_from_defaults(
         #     f"Properties of {default=}: {list(schema_of_default['properties'].keys())}"
         # )  # type: ignore
 
-        schema = _merge_dicts(  # type: ignore
+        schema = merge_dicts(  # type: ignore
             schema_of_default,  # type: ignore
             schema,  # type: ignore
             conflict_handler=_overwrite,
@@ -557,6 +564,7 @@ def _update_schema_from_defaults(
             #     "title": _overwrite,
             #     "description": _overwrite,
             # },
+            conflict_handlers=schema_conflict_handlers,
         )
         # todo: deal with this one here.
         if schema.get("additionalProperties") is False:
@@ -655,63 +663,6 @@ def _overwrite(val_a: Any, val_b: Any) -> Any:
 
 def _keep_previous(val_a: Any, val_b: Any) -> Any:
     return val_a
-
-
-conflict_handlers: dict[str, Callable[[Any, Any], Any]] = {}
-
-_K = TypeVar("_K")
-_V = TypeVar("_V")
-_NestedDict = MutableMapping[_K, _V | "_NestedDict[_K, _V]"]
-
-_D1 = TypeVar("_D1", bound=_NestedDict)
-_D2 = TypeVar("_D2", bound=_NestedDict)
-
-
-def _merge_dicts(
-    a: _D1,
-    b: _D2,
-    path: list[str] = [],
-    conflict_handlers: dict[str, Callable[[Any, Any], Any]] = conflict_handlers,
-    conflict_handler: Callable[[Any, Any], Any] | None = None,
-) -> _D1 | _D2:
-    """Merge two nested dictionaries.
-
-    >>> x = dict(b=1, c=dict(d=2, e=3))
-    >>> y = dict(d=3, c=dict(z=2, f=4))
-    >>> _merge_dicts(x, y)
-    {'b': 1, 'c': {'d': 2, 'e': 3, 'z': 2, 'f': 4}, 'd': 3}
-    >>> x
-    {'b': 1, 'c': {'d': 2, 'e': 3}}
-    >>> y
-    {'d': 3, 'c': {'z': 2, 'f': 4}}
-    """
-    out = copy.deepcopy(a)
-    for key in b:
-        if key in a:
-            if isinstance(a[key], dict) and isinstance(b[key], dict):
-                out[key] = _merge_dicts(
-                    a[key],
-                    b[key],
-                    path + [str(key)],
-                    conflict_handlers={
-                        k.removeprefix(f"{key}."): v
-                        for k, v in conflict_handlers.items()
-                    },
-                    conflict_handler=conflict_handler,
-                )
-            elif a[key] != b[key]:
-                if specific_conflict_handler := conflict_handlers.get(key):
-                    out[key] = specific_conflict_handler(a[key], b[key])  # type: ignore
-                elif conflict_handler:
-                    out[key] = conflict_handler(a[key], b[key])  # type: ignore
-
-                # if any(key.split(".")[-1] == handler_name for  for prefix in ["_", "description", "title"]):
-                #     out[key] = b[key]
-                else:
-                    raise Exception("Conflict at " + ".".join(path + [str(key)]))
-        else:
-            out[key] = copy.deepcopy(b[key])  # type: ignore
-    return out
 
 
 def _has_package_global_line(config_file: Path) -> int | None:
@@ -941,19 +892,24 @@ def _add_schema_header(config_file: Path, schema_path: Path) -> None:
 
 
 def _get_dataclass_from_target(target: Any, config: dict | DictConfig) -> type:
-    if inspect.isclass(target) and target in special_handlers:
-        special_kwargs = special_handlers[target]
-        kwargs = _merge_dicts(
-            dict(
-                populate_full_signature=True,
-                hydra_recursive=False,
-                hydra_convert="all",
-                zen_dataclass={"cls_name": target.__qualname__},
-            ),
-            special_kwargs,
-        )
-        # Generate the dataclass dynamically with hydra-zen.
-        return hydra_zen.builds(target, **kwargs)
+    for target_type, special_kwargs in custom_hydra_zen_builds_args.items():
+        if target_type is target or (
+            inspect.isclass(target)
+            and inspect.isclass(target_type)
+            and issubclass(target, target_type)
+        ):
+            kwargs = merge_dicts(
+                dict(
+                    populate_full_signature=True,
+                    hydra_recursive=False,
+                    hydra_convert="all",
+                    zen_dataclass={"cls_name": target.__qualname__},
+                ),
+                special_kwargs,
+                conflict_handler=_overwrite,
+            )
+            # Generate the dataclass dynamically with hydra-zen.
+            return hydra_zen.builds(target, **kwargs)
     if dataclasses.is_dataclass(target):
         # The target is a dataclass, so the schema is just the schema of the dataclass.
         assert inspect.isclass(target)

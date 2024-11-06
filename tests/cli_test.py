@@ -1,5 +1,6 @@
 import shlex
 import subprocess
+import warnings
 from pathlib import Path
 
 import hydra.core.plugins
@@ -25,6 +26,7 @@ structured_app_dir = this_dir / "structured_app"
 @pytest.mark.parametrize(
     "args",
     [
+        # f"{structured_app_dir} --stop-on-error --regen-schemas -vvv",
         f"{this_dir} --stop-on-error --regen-schemas -vvv",
         # TODO: Perhaps we could try to import the repo_root as a python module, or add it to
         # path, or something similar, so that we can actually get a "hydrated" ConfigStore object?
@@ -35,6 +37,9 @@ def test_run_via_cli_without_errors(args: str):
     """Checks that the command completes without errors."""
     # Run programmatically instead of with a subprocess so we can get nice coverage stats.
     # assuming we're at the project root directory.
+    from hydra.core.config_store import ConfigStore
+
+    warnings.warn(RuntimeWarning(ConfigStore.instance().repo.keys()))
     main(shlex.split(args))
 
 
