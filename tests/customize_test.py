@@ -249,7 +249,7 @@ def test_use_custom_builds_kwargs(
     tmp_path: Path,
     file_regression: FileRegressionFixture,
 ):
-    from hydra_auto_schema.customize import special_handlers
+    from hydra_auto_schema.customize import custom_hydra_zen_builds_args
 
     mock_hydra_zen_builds = Mock(spec=hydra_zen.builds, wraps=hydra_zen.builds)
     monkeypatch.setattr(hydra_zen, hydra_zen.builds.__name__, mock_hydra_zen_builds)
@@ -275,7 +275,7 @@ def test_use_custom_builds_kwargs(
     mock_hydra_zen_builds.reset_mock()
 
     # Now, suppose that we registered this class to have special kwargs for `hydra_zen.builds`:
-    monkeypatch.setitem(special_handlers, A, {"zen_exclude": ["a"]})
+    monkeypatch.setitem(custom_hydra_zen_builds_args, A, {"zen_exclude": ["a"]})
 
     schema = _create_schema_for_config(
         config,
@@ -302,7 +302,7 @@ class B(A):
 def test_use_custom_builds_kwargs_if_base_in_special_handlers(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
-    from hydra_auto_schema.customize import special_handlers
+    from hydra_auto_schema.customize import custom_hydra_zen_builds_args
 
     mock_hydra_zen_builds = Mock(spec=hydra_zen.builds, wraps=hydra_zen.builds)
     monkeypatch.setattr(hydra_zen, hydra_zen.builds.__name__, mock_hydra_zen_builds)
@@ -327,7 +327,7 @@ def test_use_custom_builds_kwargs_if_base_in_special_handlers(
     mock_hydra_zen_builds.reset_mock()
 
     # Now, suppose that the base class has some special kwargs registered:
-    monkeypatch.setitem(special_handlers, A, {"zen_exclude": ["a"]})
+    monkeypatch.setitem(custom_hydra_zen_builds_args, A, {"zen_exclude": ["a"]})
 
     _schema = _create_schema_for_config(
         config,

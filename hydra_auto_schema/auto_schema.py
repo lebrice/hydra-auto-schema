@@ -47,7 +47,11 @@ from pydantic.json_schema import GenerateJsonSchema, JsonSchemaValue
 from pydantic_core import core_schema
 from tqdm.rich import tqdm_rich
 
-from hydra_auto_schema.customize import custom_enum_schemas, special_handlers
+from hydra_auto_schema.customize import (
+    custom_enum_schemas,
+    custom_hydra_zen_builds_args,
+    schema_conflict_handlers,
+)
 from hydra_auto_schema.hydra_schema import (
     HYDRA_CONFIG_SCHEMA,
     ObjectSchema,
@@ -459,7 +463,10 @@ def _create_schema_for_config(
 
         if is_top_level:
             schema = merge_dicts(
-                schema, nested_value_schema, conflict_handler=_overwrite
+                schema,
+                nested_value_schema,
+                conflict_handler=_overwrite,
+                conflict_handlers=schema_conflict_handlers,
             )
             continue
 
@@ -484,6 +491,7 @@ def _create_schema_for_config(
                 where_to_set["properties"],
                 {last_key: nested_value_schema},  # type: ignore
                 conflict_handler=_overwrite,
+                conflict_handlers=schema_conflict_handlers,
             )
 
     return schema
@@ -556,6 +564,7 @@ def _update_schema_from_defaults(
             #     "title": _overwrite,
             #     "description": _overwrite,
             # },
+            conflict_handlers=schema_conflict_handlers,
         )
         # todo: deal with this one here.
         if schema.get("additionalProperties") is False:
@@ -883,7 +892,7 @@ def _add_schema_header(config_file: Path, schema_path: Path) -> None:
 
 
 def _get_dataclass_from_target(target: Any, config: dict | DictConfig) -> type:
-    for target_type, special_kwargs in special_handlers.items():
+    for target_type, special_kwargs in custom_hydra_zen_builds_args.items():
         if target_type is target or (
             inspect.isclass(target)
             and inspect.isclass(target_type)

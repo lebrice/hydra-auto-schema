@@ -3,8 +3,6 @@ import inspect
 from pathlib import Path
 from typing import Callable, Mapping, MutableMapping, TypeVar, cast
 
-# from hydra_auto_schema.customize import conflict_handlers
-
 K = TypeVar("K")
 K1 = TypeVar("K1")
 K2 = TypeVar("K2")
