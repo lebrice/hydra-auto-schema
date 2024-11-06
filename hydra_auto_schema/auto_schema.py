@@ -883,19 +883,24 @@ def _add_schema_header(config_file: Path, schema_path: Path) -> None:
 
 
 def _get_dataclass_from_target(target: Any, config: dict | DictConfig) -> type:
-    if inspect.isclass(target) and target in special_handlers:
-        special_kwargs = special_handlers[target]
-        kwargs = merge_dicts(
-            dict(
-                populate_full_signature=True,
-                hydra_recursive=False,
-                hydra_convert="all",
-                zen_dataclass={"cls_name": target.__qualname__},
-            ),
-            special_kwargs,
-        )
-        # Generate the dataclass dynamically with hydra-zen.
-        return hydra_zen.builds(target, **kwargs)
+    for target_type, special_kwargs in special_handlers.items():
+        if target_type is target or (
+            inspect.isclass(target)
+            and inspect.isclass(target_type)
+            and issubclass(target, target_type)
+        ):
+            kwargs = merge_dicts(
+                dict(
+                    populate_full_signature=True,
+                    hydra_recursive=False,
+                    hydra_convert="all",
+                    zen_dataclass={"cls_name": target.__qualname__},
+                ),
+                special_kwargs,
+                conflict_handler=_overwrite,
+            )
+            # Generate the dataclass dynamically with hydra-zen.
+            return hydra_zen.builds(target, **kwargs)
     if dataclasses.is_dataclass(target):
         # The target is a dataclass, so the schema is just the schema of the dataclass.
         assert inspect.isclass(target)

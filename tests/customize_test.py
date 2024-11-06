@@ -1,6 +1,8 @@
 import enum
 import functools
 import json
+import unittest
+import unittest.mock
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable
@@ -8,10 +10,12 @@ from unittest.mock import Mock
 
 import hydra_zen
 import omegaconf
+import pydantic_core
 import pytest
 from pytest_regressions.file_regression import FileRegressionFixture
 
 from hydra_auto_schema.auto_schema import _create_schema_for_config
+from hydra_auto_schema.utils import get_target_string
 
 ## Copied from torchvision.
 
@@ -198,13 +202,27 @@ def test_use_custom_enum_handler(
         spec=_handle_torchvision_weights_enum, wraps=_handle_torchvision_weights_enum
     )
 
-    monkeypatch.setitem(custom_enum_schemas, WeightsEnum, mock)
-
     config = {
-        "_target_": f"{resnet50.__module__}.{resnet50.__name__}",
+        "_target_": get_target_string(resnet50),
     }
     config_file = tmp_path / "config.yaml"
     omegaconf.OmegaConf.save(config, config_file)
+    with pytest.raises(
+        pydantic_core._pydantic_core.PydanticSerializationError,
+        match="Unable to serialize unknown type: <class 'functools.partial'>",
+    ):
+        _ = _create_schema_for_config(
+            config,
+            config_file,
+            configs_dir=tmp_path,
+            repo_root=tmp_path,
+            config_store=None,
+        )
+    mock.assert_not_called()
+
+    mock.reset_mock()
+
+    monkeypatch.setitem(custom_enum_schemas, WeightsEnum, mock)
 
     schema = _create_schema_for_config(
         config,
@@ -213,23 +231,83 @@ def test_use_custom_enum_handler(
         repo_root=tmp_path,
         config_store=None,
     )
-    mock.assert_called()
+    mock.assert_called_once_with(ResNet50_Weights, unittest.mock.ANY)
+
     file_regression.check(
-        json.dumps(schema, indent=2),
+        json.dumps(schema, indent=2) + "\n",
         extension=".json",
     )
 
 
-def test_use_custom_builds_kwargs(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+class A:
+    def __init__(self, a: int = 1):
+        self.a = a
+
+
+def test_use_custom_builds_kwargs(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    file_regression: FileRegressionFixture,
+):
     from hydra_auto_schema.customize import special_handlers
 
     mock_hydra_zen_builds = Mock(spec=hydra_zen.builds, wraps=hydra_zen.builds)
     monkeypatch.setattr(hydra_zen, hydra_zen.builds.__name__, mock_hydra_zen_builds)
 
-    monkeypatch.setitem(special_handlers, resnet50, {"zen_exclude": ["weights"]})
-    config = {
-        "_target_": f"{resnet50.__module__}.{resnet50.__name__}",
-    }
+    config = {"_target_": get_target_string(A)}
+    config_file = tmp_path / "config.yaml"
+    omegaconf.OmegaConf.save(config, config_file)
+
+    _schema = _create_schema_for_config(
+        config,
+        config_file,
+        configs_dir=tmp_path,
+        repo_root=tmp_path,
+        config_store=None,
+    )
+
+    mock_hydra_zen_builds.assert_called_once()
+    call = mock_hydra_zen_builds.call_args_list[0]
+    assert call.args[0] is A
+    # The `zen_exclude` kwarg shouldn't be in the call args to start with.
+    assert "zen_exclude" not in call.kwargs
+
+    mock_hydra_zen_builds.reset_mock()
+
+    # Now, suppose that we registered this class to have special kwargs for `hydra_zen.builds`:
+    monkeypatch.setitem(special_handlers, A, {"zen_exclude": ["a"]})
+
+    schema = _create_schema_for_config(
+        config,
+        config_file,
+        configs_dir=tmp_path,
+        repo_root=tmp_path,
+        config_store=None,
+    )
+
+    mock_hydra_zen_builds.assert_called_once()
+    call = mock_hydra_zen_builds.call_args_list[0]
+    assert call.args[0] is A
+    # We should now expect the `zen_exclude` kwarg to have been passed to `hydra_zen.builds`.
+    assert call.kwargs["zen_exclude"] == ["a"]
+    file_regression.check(json.dumps(schema, indent=2) + "\n", extension=".json")
+
+
+class B(A):
+    def __init__(self, a: int = 2, b: str = "b"):
+        super().__init__(a=a)
+        self.b = b
+
+
+def test_use_custom_builds_kwargs_if_base_in_special_handlers(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+    from hydra_auto_schema.customize import special_handlers
+
+    mock_hydra_zen_builds = Mock(spec=hydra_zen.builds, wraps=hydra_zen.builds)
+    monkeypatch.setattr(hydra_zen, hydra_zen.builds.__name__, mock_hydra_zen_builds)
+
+    config = {"_target_": get_target_string(B)}
     config_file = tmp_path / "config.yaml"
     omegaconf.OmegaConf.save(config, config_file)
 
@@ -241,7 +319,25 @@ def test_use_custom_builds_kwargs(monkeypatch: pytest.MonkeyPatch, tmp_path: Pat
         config_store=None,
     )
     mock_hydra_zen_builds.assert_called_once()
-    call = mock_hydra_zen_builds.call_args_list[0]
+    call_without_special_kwargs = mock_hydra_zen_builds.call_args_list[0]
+    assert call_without_special_kwargs.args[0] is B
+    # The `zen_exclude` kwarg shouldn't be in the call args to start with.
+    assert "zen_exclude" not in call_without_special_kwargs
 
-    assert call.args[0] is resnet50
-    assert call.kwargs["zen_exclude"] == ["weights"]
+    mock_hydra_zen_builds.reset_mock()
+
+    # Now, suppose that the base class has some special kwargs registered:
+    monkeypatch.setitem(special_handlers, A, {"zen_exclude": ["a"]})
+
+    _schema = _create_schema_for_config(
+        config,
+        config_file,
+        configs_dir=tmp_path,
+        repo_root=tmp_path,
+        config_store=None,
+    )
+
+    mock_hydra_zen_builds.assert_called_once()
+    call_without_special_kwargs = mock_hydra_zen_builds.call_args_list[0]
+    assert call_without_special_kwargs.args[0] is B
+    assert call_without_special_kwargs.kwargs["zen_exclude"] == ["a"]
