@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any, Callable
 from unittest.mock import Mock
 
+import hydra_zen
 import omegaconf
 import pytest
 from pytest_regressions.file_regression import FileRegressionFixture
@@ -217,3 +218,30 @@ def test_use_custom_enum_handler(
         json.dumps(schema, indent=2),
         extension=".json",
     )
+
+
+def test_use_custom_builds_kwargs(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    from hydra_auto_schema.customize import special_handlers
+
+    mock_hydra_zen_builds = Mock(spec=hydra_zen.builds, wraps=hydra_zen.builds)
+    monkeypatch.setattr(hydra_zen, hydra_zen.builds.__name__, mock_hydra_zen_builds)
+
+    monkeypatch.setitem(special_handlers, resnet50, {"zen_exclude": ["weights"]})
+    config = {
+        "_target_": f"{resnet50.__module__}.{resnet50.__name__}",
+    }
+    config_file = tmp_path / "config.yaml"
+    omegaconf.OmegaConf.save(config, config_file)
+
+    _schema = _create_schema_for_config(
+        config,
+        config_file,
+        configs_dir=tmp_path,
+        repo_root=tmp_path,
+        config_store=None,
+    )
+    mock_hydra_zen_builds.assert_called_once()
+    call = mock_hydra_zen_builds.call_args_list[0]
+
+    assert call.args[0] is resnet50
+    assert call.kwargs["zen_exclude"] == ["weights"]

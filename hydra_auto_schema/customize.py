@@ -1,9 +1,9 @@
 import dataclasses
-from collections.abc import Callable
 import enum
+from typing import Callable
+
 from pydantic.json_schema import JsonSchemaValue
 from pydantic_core import core_schema
-
 
 special_handlers: dict[type | Callable, dict] = {
     # flax.linen.Module: {"zen_exclude": ["parent"]},
@@ -48,3 +48,6 @@ try:
     custom_enum_schemas[_WeightsEnum] = _handle_torchvision_weights_enum
 except ImportError:
     pass
+
+# conflict_handlers: dict[str, Callable[[Any, Any], Any]] = {}
+# """Functions to be used by the `merge_dicts` function to resolve conflicts between schemas."""
