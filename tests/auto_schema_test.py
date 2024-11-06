@@ -5,7 +5,6 @@ from pathlib import Path
 import pytest
 import yaml
 from hydra.core.config_store import ConfigStore
-from hydra.core.singleton import Singleton
 from pytest_regressions.file_regression import FileRegressionFixture
 
 from hydra_auto_schema.auto_schema import (
@@ -17,15 +16,6 @@ from hydra_auto_schema.auto_schema import (
 REPO_ROOTDIR = Path.cwd()
 IN_GITHUB_CI = "GITHUB_ACTIONS" in os.environ
 config_dir = Path(__file__).parent.parent / "tests" / "configs"
-
-
-@pytest.fixture(autouse=True)
-def reset_singletons_between_tests():
-    state = Singleton.get_state()
-
-    yield
-
-    Singleton.set_state(state)
 
 
 @pytest.fixture

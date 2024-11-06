@@ -1,5 +1,6 @@
 import shlex
 import subprocess
+import warnings
 from pathlib import Path
 
 import hydra.core.plugins
@@ -36,6 +37,9 @@ def test_run_via_cli_without_errors(args: str):
     """Checks that the command completes without errors."""
     # Run programmatically instead of with a subprocess so we can get nice coverage stats.
     # assuming we're at the project root directory.
+    from hydra.core.config_store import ConfigStore
+
+    warnings.warn(RuntimeWarning(ConfigStore.instance().repo.keys()))
     main(shlex.split(args))
 
 
