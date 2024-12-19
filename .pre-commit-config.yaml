@@ -35,7 +35,7 @@ repos:
     rev: "v0.6.9"
     hooks:
       - id: ruff
-        args: ["--line-length", "99", "--fix"]
+        args: ["--fix"]
         require_serial: true
 
   # python docstring formatting
@@ -44,7 +44,7 @@ repos:
     hooks:
       - id: docformatter
         language: python
-        args: [--in-place, --wrap-summaries=99, --wrap-descriptions=99]
+        args: [--in-place]
         require_serial: true
 
   # NOTE: Disabling this, since I'm having the glib-c2.29 weird bug.
