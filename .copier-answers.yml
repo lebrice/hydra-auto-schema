@@ -1,0 +1,8 @@
+# Changes here will be overwritten by Copier
+_commit: v0.0.3-2-ge44104f
+_src_path: gh:lebrice/tool_template
+project_description: Automagically generate yaml schemas for your Hydra config files.
+python_version: '3.10'
+tool_name: hydra_auto_schema
+your_email: fabrice.normandin@gmail.com
+your_name: Fabrice Normandin
