@@ -34,10 +34,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           cache-suffix: "3.10"
       - name: Install dependencies
-        run: uv sync --frozen
-      - run: pre-commit --version
-      - run: pre-commit install
-      - run: pre-commit run --all-files --show-diff-on-failure
+        run: uvx pre-commit run --all-files --show-diff-on-failure
 
   check_docs:
     needs: [linting]
