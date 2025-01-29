@@ -69,7 +69,7 @@ if __name__ == "__main__":
     register_configs()
 
 auto_schema_plugin.config = auto_schema_plugin.AutoSchemaPluginConfig(
-    schemas_dir=Path(__file__).parent / "schemas",
+    schemas_dir=Path(__file__).parent / ".schemas",
     regen_schemas=True,
     quiet=False,
     add_headers=True,
