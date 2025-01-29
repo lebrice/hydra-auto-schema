@@ -22,7 +22,7 @@ from hydra_auto_schema.auto_schema import (
     _add_schema_header,
     _add_schemas_to_vscode_settings,
     _create_schema_for_config,
-    _install_yaml_vscode_extension,
+    _try_to_install_yaml_vscode_extension,
     _read_json,
     add_schemas_to_all_hydra_configs,
     get_schema_file_path,
@@ -194,10 +194,7 @@ class AutoSchemaEventHandler(PatternMatchingEventHandler):
         # _set_is_incomplete_schema(schema_file, False)
 
         if not self.add_headers:
-            try:
-                _install_yaml_vscode_extension()
-            except OSError:
-                pass
+            _try_to_install_yaml_vscode_extension()
 
             try:
                 _add_schemas_to_vscode_settings(

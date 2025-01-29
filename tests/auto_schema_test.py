@@ -1,14 +1,17 @@
 import json
 import os
 from pathlib import Path
+import shutil
 
 import pytest
 import yaml
 from hydra.core.config_store import ConfigStore
 from pytest_regressions.file_regression import FileRegressionFixture
+import subprocess
 
 from hydra_auto_schema.auto_schema import (
     _add_schema_header,
+    _try_to_install_yaml_vscode_extension,
     _create_schema_for_config,
     add_schemas_to_all_hydra_configs,
 )
@@ -81,3 +84,21 @@ def test_raises_when_no_config_files_found_and_stop_on_error(tmp_path: Path):
             schemas_dir=tmp_path,
             stop_on_error=True,
         )
+
+
+def test_doesnt_raise_when_vscode_isnt_installed(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+    assert _try_to_install_yaml_vscode_extension() == bool(shutil.which("code"))
+
+    check_output = subprocess.check_output
+
+    def _mock_check_output(args: tuple[str, ...], *other_args, **kwargs):
+        assert args[0] == "code"
+        new_command = ("code_blabla_doesnt_exist",) + args[1:]
+        return check_output(new_command, *other_args, **kwargs)
+
+    monkeypatch.setattr(
+        subprocess, subprocess.check_output.__name__, _mock_check_output
+    )
+    assert _try_to_install_yaml_vscode_extension() is False
