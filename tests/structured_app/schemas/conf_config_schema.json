@@ -47,7 +47,7 @@
       "type": "string",
       "title": "Target",
       "description": "Target to instantiate, in this case: `Config`\nSee the Hydra docs for '_target_': https://hydra.cc/docs/advanced/instantiate_objects/overview/\n",
-      "const": "__main__.Config"
+      "const": "structured_app.app.Config"
     },
     "_convert_": {
       "type": "string",
@@ -108,7 +108,7 @@
         "_target_": {
           "type": "string",
           "title": "Target",
-          "const": "__main__.MySQLConfig",
+          "const": "structured_app.app.MySQLConfig",
           "description": "Target to instantiate, in this case: `MySQLConfig`\nSee the Hydra docs for '_target_': https://hydra.cc/docs/advanced/instantiate_objects/overview/\n"
         }
       },
