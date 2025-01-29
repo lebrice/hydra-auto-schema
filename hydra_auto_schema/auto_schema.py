@@ -239,10 +239,7 @@ def add_schemas_to_all_hydra_configs(
     # If add_headers is True, only use option 2
 
     if not add_headers:
-        try:
-            _install_yaml_vscode_extension()
-        except OSError:
-            pass
+        _try_to_install_yaml_vscode_extension()
 
         try:
             _add_schemas_to_vscode_settings(
@@ -310,14 +307,15 @@ def _relative_to_cwd(p: str | Path):
     return Path(p).relative_to(Path.cwd())
 
 
-def _install_yaml_vscode_extension():
+def _try_to_install_yaml_vscode_extension() -> bool:
     logger.debug(
         "Running `code --install-extension redhat.vscode-yaml` to install the yaml extension for vscode."
     )
-    output = subprocess.check_output(
-        ("code", "--install-extension", "redhat.vscode-yaml"), text=True
+    exitcode, output = subprocess.getstatusoutput(
+        ("code", "--install-extension", "redhat.vscode-yaml")
     )
     logger.debug(output)
+    return exitcode == 0
 
 
 def _read_json(file: Path) -> dict:
