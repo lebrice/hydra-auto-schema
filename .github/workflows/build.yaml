@@ -25,31 +25,34 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v4
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@v3
         with:
-          python-version: "3.10"
-      - run: pip install 'pre-commit<4.0.0'
-      - run: pre-commit --version
-      - run: pre-commit install
-      - run: pre-commit run --all-files --show-diff-on-failure
+          version: "latest"
+          enable-cache: true
+          # https://github.com/astral-sh/setup-uv?tab=readme-ov-file#github-authentication-token
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          cache-suffix: "3.10"
+      - name: Install dependencies
+        run: uvx pre-commit run --all-files --show-diff-on-failure
 
-#   check_docs:
-#     needs: [linting]
-#     runs-on: ubuntu-latest
-#     steps:
-#       - uses: actions/checkout@v4
-#       - name: Install the latest version of uv
-#         uses: astral-sh/setup-uv@v3
-#         with:
-#           version: "latest"
-#           enable-cache: true
-#           # https://github.com/astral-sh/setup-uv?tab=readme-ov-file#github-authentication-token
-#           github-token: ${{ secrets.GITHUB_TOKEN }}
-#           cache-suffix: "3.10"
-#       - name: Install dependencies
-#         run: uv sync --frozen --extra docs
-#       - name: Build the documentation (strict mode)
-#         run: uv run mkdocs build --strict
+  check_docs:
+    needs: [linting]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+          enable-cache: true
+          # https://github.com/astral-sh/setup-uv?tab=readme-ov-file#github-authentication-token
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          cache-suffix: "3.10"
+      - name: Install dependencies
+        run: uv sync --frozen
+      - name: Build the documentation (strict mode)
+        run: uv run mkdocs build --strict
 
   unit_tests:
     needs: [linting]
