@@ -1,18 +1,18 @@
 import json
 import os
-from pathlib import Path
 import shutil
+import subprocess
+from pathlib import Path
 
 import pytest
 import yaml
 from hydra.core.config_store import ConfigStore
 from pytest_regressions.file_regression import FileRegressionFixture
-import subprocess
 
 from hydra_auto_schema.auto_schema import (
     _add_schema_header,
-    _try_to_install_yaml_vscode_extension,
     _create_schema_for_config,
+    _try_to_install_yaml_vscode_extension,
     add_schemas_to_all_hydra_configs,
 )
 
@@ -93,9 +93,9 @@ def test_doesnt_raise_when_vscode_isnt_installed(
 
     check_output = subprocess.check_output
 
-    def _mock_check_output(args: tuple[str, ...], *other_args, **kwargs):
-        assert args[0] == "code"
-        new_command = ("code_blabla_doesnt_exist",) + args[1:]
+    def _mock_check_output(args: str, *other_args, **kwargs):
+        assert args.split()[0] == "code"
+        new_command = args.replace("code", "code_blabla_doesnt_exist")
         return check_output(new_command, *other_args, **kwargs)
 
     monkeypatch.setattr(
