@@ -312,8 +312,9 @@ def _try_to_install_yaml_vscode_extension() -> bool:
         "Running `code --install-extension redhat.vscode-yaml` to install the yaml extension for vscode."
     )
     exitcode, output = subprocess.getstatusoutput(
-        ("code", "--install-extension", "redhat.vscode-yaml")
+        "code --install-extension redhat.vscode-yaml"
     )
+
     logger.debug(output)
     return exitcode == 0
 
